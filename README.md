@@ -25,6 +25,12 @@ Welcome to the lab script repository. This is a shared space for storing and acc
 3. Drag and drop your script
 4. Add a short description at the bottom and click **"Commit changes"**
 
+### 📋 Naming Convention
+Please name your files clearly:
+`topic_method_yourname.py` → e.g., `cellsegmentation_watershed_jane.py`
+
+---
+
 ### Creating a new folder
 
 GitHub doesn't allow creating empty folders — you have to create a folder and a file inside it at the same time.
@@ -37,11 +43,6 @@ GitHub doesn't allow creating empty folders — you have to create a folder and 
 4. Add a short description of what the folder is for in the file body
 5. Click "Commit changes"
 
----
-
-## 📋 Naming Convention
-Please name your files clearly:
-`topic_method_yourname.py` → e.g., `cellsegmentation_watershed_jane.py`
 
 
 
