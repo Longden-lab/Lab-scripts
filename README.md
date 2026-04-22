@@ -9,7 +9,7 @@ Welcome to the lab script repository. This is a shared space for storing and acc
 | Category | Description | Languages |
 |---|---|---|
 | [📷 Image Processing](./image_processing) | 2P imaging, confocal analysis | MATLAB, R, ImageJ macro |
-| [🧬 Bioinformatics](./bioinformatics) | scRNA-seq, RiboTag-seq, data visualization | R |
+| [🧬 Bioinformatics](./Bioinformatics) | scRNA-seq, RiboTag-seq, data visualization | R |
 
 ---
 
