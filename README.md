@@ -27,7 +27,7 @@ Welcome to the lab script repository. This is a shared space for storing and acc
 
 ### 📋 Naming Convention
 Please name your files clearly:
-`topic_method_yourname.py` → e.g., `cellsegmentation_watershed_jane.py`
+`topic_yourname.R` → e.g., `PAdiameter_Gyu.R`
 
 ---
 
