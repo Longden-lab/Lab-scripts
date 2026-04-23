@@ -17,7 +17,6 @@ Welcome to the lab script repository. This is a shared space for storing and acc
 
 ### Browsing Scripts
 - Click a folder above to explore scripts by category
-- Each folder has its own README describing the scripts inside
 
 ### Uploading a Script (No coding experience needed)
 1. Navigate to the correct folder (e.g.,'./image_processing')
@@ -28,7 +27,6 @@ Welcome to the lab script repository. This is a shared space for storing and acc
 ### 📋 Naming Convention
 Please name your files clearly:
 `topic_yourname.R` → e.g., `PAdiameter_Gyu.R`
-
 ---
 
 ### Creating a new folder
