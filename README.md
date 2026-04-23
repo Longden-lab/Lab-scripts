@@ -1,4 +1,4 @@
-# 🔬 Longden Lab - Script Repository 
+# 🐭🧠🩸 Longden Lab - Script Repository 
 
 Welcome to the lab script repository. This is a shared space for storing and accessing analysis scripts used in the lab.
 
