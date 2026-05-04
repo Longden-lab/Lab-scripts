@@ -1,249 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Longden Lab — Script Repository</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #0d1117;
-      --surface: #161b22;
-      --surface2: #1c2330;
-      --border: #2a3441;
-      --accent: #58a6ff;
-      --accent2: #3fb950;
-      --text: #e6edf3;
-      --muted: #8b949e;
-      --tag-r: #276DC3;
-      --tag-matlab: #c47a1e;
-      --tag-imagej: #6a4c9c;
-      --tag-python: #3776AB;
-    }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Longden Lab — Script Repository</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0d1117;--sur:#161b22;--sur2:#1c2330;--bor:#2a3441;--acc:#58a6ff;--grn:#3fb950;--txt:#e6edf3;--mut:#8b949e;--m:#c47a1e;--r:#276DC3;--ij:#6a4c9c;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;line-height:1.7;}
+a{color:var(--acc);text-decoration:none;}
+a:hover{text-decoration:underline;}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+/* HEADER */
+header{padding:56px 24px 44px;text-align:center;border-bottom:1px solid var(--bor);background:radial-gradient(ellipse at 50% 0%,#1a2744,var(--bg) 70%);}
+.lab-emoji{font-size:2.2rem;letter-spacing:4px;display:block;margin-bottom:16px;}
+h1{font-family:'DM Serif Display',serif;font-size:2.6rem;font-weight:400;letter-spacing:-.5px;}
+header p{color:var(--mut);margin-top:10px;font-size:1rem;font-weight:300;}
+.gh-link{display:inline-flex;align-items:center;gap:8px;margin-top:22px;padding:9px 20px;border:1px solid var(--bor);border-radius:8px;color:var(--mut);font-size:.875rem;transition:border-color .2s,color .2s;}
+.gh-link:hover{border-color:var(--acc);color:var(--acc);text-decoration:none;}
 
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      line-height: 1.7;
-    }
+/* MAIN */
+main{max-width:900px;margin:0 auto;padding:48px 24px 80px;}
+.slabel{font-size:.68rem;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--mut);margin-bottom:18px;margin-top:48px;display:flex;align-items:center;gap:10px;}
+.slabel::after{content:'';flex:1;height:1px;background:var(--bor);}
 
-    /* Header */
-    header {
-      border-bottom: 1px solid var(--border);
-      padding: 48px 0 36px;
-      text-align: center;
-      background: radial-gradient(ellipse at 50% 0%, #1a2744 0%, var(--bg) 70%);
-    }
+/* CATEGORY CARDS — these are the clickable ones */
+.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.cat-card{background:var(--sur);border:1px solid var(--bor);border-radius:12px;padding:28px;display:block;text-decoration:none;color:var(--txt);transition:border-color .2s,transform .2s,box-shadow .2s;}
+.cat-card:hover{border-color:var(--acc);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.35);text-decoration:none;}
+.cat-icon{font-size:1.8rem;margin-bottom:14px;display:block;}
+.cat-card h2{font-family:'DM Serif Display',serif;font-size:1.3rem;font-weight:400;margin-bottom:8px;}
+.cat-card p{font-size:.875rem;color:var(--mut);margin-bottom:16px;line-height:1.6;}
+.cat-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.tag{font-family:'DM Mono',monospace;font-size:.7rem;padding:2px 10px;border-radius:4px;color:#fff;font-weight:500;}
+.tag-m{background:var(--m);}.tag-r{background:var(--r);}.tag-ij{background:var(--ij);}
+.cat-link{font-size:.82rem;color:var(--acc);}
 
-    .lab-emoji {
-      font-size: 2.2rem;
-      letter-spacing: 4px;
-      display: block;
-      margin-bottom: 12px;
-    }
+/* HOW TO USE */
+.steps-box{background:var(--sur);border:1px solid var(--bor);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+.steps-head{padding:14px 20px;background:var(--sur2);border-bottom:1px solid var(--bor);font-size:.9rem;font-weight:600;}
+.steps-body{padding:18px 24px;}
+ol{padding-left:18px;}
+li{font-size:.875rem;margin-bottom:10px;color:var(--txt);}
+li span{color:var(--mut);}
+code{font-family:'DM Mono',monospace;background:var(--sur2);border:1px solid var(--bor);border-radius:3px;padding:1px 6px;font-size:.8rem;color:var(--acc);}
+strong{font-weight:600;}
 
-    h1 {
-      font-family: 'DM Serif Display', serif;
-      font-size: 2.4rem;
-      font-weight: 400;
-      color: var(--text);
-      letter-spacing: -0.5px;
-    }
+/* CONVENTION */
+.conv-box{background:var(--sur);border:1px solid var(--bor);border-left:3px solid var(--grn);border-radius:0 10px 10px 0;padding:18px 22px;}
+.conv-box p{font-size:.875rem;color:var(--mut);margin-bottom:8px;}
 
-    header p {
-      color: var(--muted);
-      margin-top: 10px;
-      font-size: 1rem;
-      font-weight: 300;
-    }
+/* NOTE / WARN */
+.note{background:#161d2a;border:1px solid #1e3a5f;border-radius:8px;padding:12px 16px;font-size:.84rem;color:#79b8f3;margin-top:12px;display:flex;gap:10px;}
+.warn{background:#1f1a10;border:1px solid #4a3800;border-radius:8px;padding:12px 16px;font-size:.84rem;color:#e3b341;margin-top:12px;display:flex;gap:10px;}
 
-    .github-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 20px;
-      padding: 8px 18px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 0.875rem;
-      transition: all 0.2s;
-    }
-    .github-link:hover { border-color: var(--accent); color: var(--accent); }
+footer{text-align:center;padding:32px;border-top:1px solid var(--bor);font-size:.8rem;color:var(--mut);}
 
-    /* Main layout */
-    main {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 48px 24px 80px;
-    }
-
-    section { margin-bottom: 52px; }
-
-    .section-label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 2.5px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 18px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .section-label::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-    /* Cards */
-    .card-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 24px;
-      text-decoration: none;
-      color: var(--text);
-      transition: border-color 0.2s, transform 0.2s;
-      display: block;
-    }
-    .card:hover {
-      border-color: var(--accent);
-      transform: translateY(-2px);
-    }
-
-    .card-icon { font-size: 1.6rem; margin-bottom: 12px; display: block; }
-
-    .card h3 {
-      font-family: 'DM Serif Display', serif;
-      font-size: 1.15rem;
-      font-weight: 400;
-      margin-bottom: 8px;
-    }
-
-    .card p {
-      font-size: 0.875rem;
-      color: var(--muted);
-      margin-bottom: 14px;
-      line-height: 1.6;
-    }
-
-    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
-
-    .tag {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.72rem;
-      padding: 2px 9px;
-      border-radius: 4px;
-      color: white;
-      font-weight: 500;
-    }
-    .tag.r { background: var(--tag-r); }
-    .tag.matlab { background: var(--tag-matlab); }
-    .tag.imagej { background: var(--tag-imagej); }
-
-    /* Steps */
-    .steps-block {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      margin-bottom: 16px;
-    }
-
-    .steps-header {
-      padding: 14px 20px;
-      background: var(--surface2);
-      border-bottom: 1px solid var(--border);
-      font-size: 0.875rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .steps-body { padding: 20px 24px; }
-
-    ol {
-      padding-left: 20px;
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-    ol li { margin-bottom: 10px; color: var(--text); }
-    ol li span { color: var(--muted); }
-
-    code {
-      font-family: 'DM Mono', monospace;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 1px 6px;
-      font-size: 0.82rem;
-      color: var(--accent);
-    }
-
-    strong { font-weight: 600; }
-
-    /* Convention box */
-    .convention-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--accent2);
-      border-radius: 0 10px 10px 0;
-      padding: 18px 22px;
-    }
-    .convention-box p { font-size: 0.9rem; color: var(--muted); margin-bottom: 8px; }
-    .convention-box .example { color: var(--text); }
-
-    /* Note callout */
-    .note {
-      background: #161d2a;
-      border: 1px solid #1e3a5f;
-      border-radius: 8px;
-      padding: 12px 16px;
-      font-size: 0.85rem;
-      color: #79b8f3;
-      margin-top: 12px;
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-    }
-
-    /* Footer */
-    footer {
-      text-align: center;
-      padding: 32px;
-      border-top: 1px solid var(--border);
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
-
-    @media (max-width: 600px) {
-      .card-grid { grid-template-columns: 1fr; }
-      h1 { font-size: 1.8rem; }
-    }
-  </style>
+@media(max-width:640px){
+  h1{font-size:1.9rem;}
+  .card-grid{grid-template-columns:1fr;}
+}
+</style>
 </head>
 <body>
 
 <header>
-  <span class="lab-emoji">🐭 🧠 🩸</span>
-  <h1>Longden Lab — Script Repository</h1>
+  <span class="lab-emoji">&#128045; &#129504; &#129754;</span>
+  <h1>Longden Lab &#8212; Script Repository</h1>
   <p>A shared space for storing and accessing analysis scripts used in the lab.</p>
-  <a class="github-link" href="https://github.com/Longden-lab/Lab-scripts" target="_blank">
+  <a class="gh-link" href="https://github.com/Longden-lab/Lab-scripts" target="_blank">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
     View on GitHub
   </a>
@@ -251,85 +77,77 @@
 
 <main>
 
-  <!-- Repository Structure -->
-  <section>
-    <div class="section-label">Repository Structure</div>
-    <div class="card-grid">
+  <!-- REPOSITORY STRUCTURE -->
+  <div class="slabel">Repository Structure</div>
+  <div class="card-grid">
 
-      <a class="card" href="https://github.com/Longden-lab/Lab-scripts/tree/main/image_processing" target="_blank">
-        <span class="card-icon">📷</span>
-        <h3>Image Processing</h3>
-        <p>2P imaging, confocal analysis, and image quantification pipelines.</p>
-        <div class="tags">
-          <span class="tag matlab">MATLAB</span>
-          <span class="tag r">R</span>
-          <span class="tag imagej">ImageJ Macro</span>
-        </div>
-      </a>
-
-      <a class="card" href="https://github.com/Longden-lab/Lab-scripts/tree/main/Bioinformatics" target="_blank">
-        <span class="card-icon">🧬</span>
-        <h3>Bioinformatics</h3>
-        <p>scRNA-seq, RiboTag-seq, and data visualization workflows.</p>
-        <div class="tags">
-          <span class="tag r">R</span>
-        </div>
-      </a>
-
-    </div>
-  </section>
-
-  <!-- How to Use -->
-  <section>
-    <div class="section-label">How to Use</div>
-
-    <div class="steps-block">
-      <div class="steps-header">🚀 Uploading a Script</div>
-      <div class="steps-body">
-        <ol>
-          <li>Navigate to the correct folder <span>(e.g., <code>image_processing/</code> or <code>Bioinformatics/</code>)</span></li>
-          <li>Click <strong>"Add file"</strong> → <strong>"Upload files"</strong></li>
-          <li>Drag and drop your script file</li>
-          <li>Add a short description at the bottom under <strong>"Commit changes"</strong></li>
-          <li>Click <strong>"Commit changes"</strong> — done!</li>
-        </ol>
+    <a class="cat-card" href="https://longden-lab.github.io/Lab-scripts/image_processing/">
+      <span class="cat-icon">&#128247;</span>
+      <h2>Image Processing</h2>
+      <p>2P imaging, confocal analysis, and image quantification pipelines.</p>
+      <div class="cat-tags">
+        <span class="tag tag-m">MATLAB</span>
+        <span class="tag tag-r">R</span>
+        <span class="tag tag-ij">ImageJ Macro</span>
       </div>
-    </div>
+      <span class="cat-link">Browse scripts &#8594;</span>
+    </a>
 
-    <div class="steps-block">
-      <div class="steps-header">📁 Creating a New Folder</div>
-      <div class="steps-body">
-        <ol>
-          <li>Navigate to where you want the new folder</li>
-          <li>Click <strong>"Add file"</strong> → <strong>"Create new file"</strong></li>
-          <li>In the filename box, type your folder name followed by <code>/</code> and a filename:<br>
-            e.g. <code>new_folder_name/README.md</code><br>
-            <span style="color:var(--muted); font-size:0.85rem;">Typing <code>/</code> automatically tells GitHub to treat it as a folder</span>
-          </li>
-          <li>Add a short description of what the folder is for in the file body</li>
-          <li>Click <strong>"Commit changes"</strong></li>
-        </ol>
-        <div class="note">
-          💡 The <code>README.md</code> you create inside will automatically display as the folder's description — always fill it in with a sentence about what belongs there.
-        </div>
+    <a class="cat-card" href="https://longden-lab.github.io/Lab-scripts/Bioinformatics/">
+      <span class="cat-icon">&#129516;</span>
+      <h2>Bioinformatics</h2>
+      <p>scRNA-seq, RiboTag-seq, and data visualization workflows.</p>
+      <div class="cat-tags">
+        <span class="tag tag-r">R</span>
       </div>
-    </div>
-  </section>
+      <span class="cat-link">Browse scripts &#8594;</span>
+    </a>
 
-  <!-- Naming Convention -->
-  <section>
-    <div class="section-label">File Naming Convention</div>
-    <div class="convention-box">
-      <p>Please name your files clearly using this format:</p>
-      <p><code>topic_yourname.ext</code></p>
-      <p class="example" style="margin-top: 10px;">Example: &nbsp;<code>PAdiameter_Gyu.R</code></p>
+  </div>
+
+  <!-- HOW TO USE -->
+  <div class="slabel">How to Use</div>
+
+  <div class="steps-box">
+    <div class="steps-head">&#128640; Uploading a Script</div>
+    <div class="steps-body">
+      <ol>
+        <li>Click the correct category card above <span>(Image Processing or Bioinformatics)</span></li>
+        <li>Navigate into the specific subfolder for your script type</li>
+        <li>Click <strong>"&#11014; Upload Script"</strong> on that page, <strong>or</strong> go directly to GitHub and click <strong>"Add file"</strong> &#8594; <strong>"Upload files"</strong></li>
+        <li>Drag and drop your script</li>
+        <li>Add a short description under <strong>"Commit changes"</strong> and click <strong>"Commit changes"</strong></li>
+      </ol>
     </div>
-  </section>
+  </div>
+
+  <div class="steps-box">
+    <div class="steps-head">&#128193; Creating a New Folder</div>
+    <div class="steps-body">
+      <ol>
+        <li>Navigate to the correct category page using the cards above</li>
+        <li>Scroll down to the <strong>"Need a new subfolder?"</strong> guide on that page</li>
+        <li>Follow the steps there &#8212; or go directly to GitHub, click <strong>"Add file"</strong> &#8594; <strong>"Create new file"</strong></li>
+        <li>In the name box type: <code>your_folder_name/README.md</code> <span>(the <code>/</code> creates the folder)</span></li>
+        <li>Click <strong>"Commit changes"</strong></li>
+      </ol>
+      <div class="warn">&#9888;&#65039; <span>Always use <code>_</code> instead of spaces in folder and file names &#8212; e.g., <code>new_folder</code> not <code>new folder</code></span></div>
+    </div>
+  </div>
+
+  <!-- NAMING CONVENTION -->
+  <div class="slabel">File Naming Convention</div>
+  <div class="conv-box">
+    <p>Please name your files using this format:</p>
+    <p><code>topic_yourname.ext</code></p>
+    <p style="margin-top:10px;color:var(--txt);">Example: &nbsp;<code>PAdiameter_Gyu.R</code> &nbsp;|&nbsp; <code>rep_image_export_Jane.ijm</code> &nbsp;|&nbsp; <code>batch_preprocess_Tom.m</code></p>
+  </div>
+  <div class="note">&#128161; <span>Not sure which folder to use? Click a category card above &#8212; each subfolder page has a description of what belongs there.</span></div>
 
 </main>
 
 <footer>
-  Longden Lab · Script Repository · <a href="https://github.com/Longden-lab/Lab-scripts" style="color:var(--muted)">github.com/Longden-lab</a>
+  Longden Lab &nbsp;&#183;&nbsp; <a href="https://github.com/Longden-lab/Lab-scripts" style="color:var(--mut)">github.com/Longden-lab/Lab-scripts</a>
 </footer>
 
 </body>
