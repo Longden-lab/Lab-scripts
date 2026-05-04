@@ -1,251 +1,215 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Bioinformatics — Longden Lab</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #0d1117; --surface: #161b22; --surface2: #1c2330;
-      --border: #2a3441; --accent: #58a6ff; --accent2: #3fb950;
-      --text: #e6edf3; --muted: #8b949e;
-      --tag-r: #276DC3;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.7; }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Bioinformatics — Longden Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0d1117;--sur:#161b22;--sur2:#1c2330;--bor:#2a3441;--acc:#58a6ff;--grn:#3fb950;--txt:#e6edf3;--mut:#8b949e;--r:#276DC3;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;line-height:1.7;}
+a{color:var(--acc);text-decoration:none;}a:hover{text-decoration:underline;}
 
-    nav { padding: 14px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: 0.875rem; color: var(--muted); background: var(--surface); flex-wrap: wrap; }
-    nav a { color: var(--accent); text-decoration: none; }
-    nav a:hover { text-decoration: underline; }
-    nav .sep { color: var(--border); }
+/* NAV */
+nav{padding:13px 28px;border-bottom:1px solid var(--bor);background:var(--sur);display:flex;align-items:center;gap:8px;font-size:.875rem;color:var(--mut);flex-wrap:wrap;}
+nav .sep{color:var(--bor);}
 
-    header { padding: 40px 0 32px; text-align: center; border-bottom: 1px solid var(--border); background: radial-gradient(ellipse at 50% 0%, #111d2a 0%, var(--bg) 70%); }
-    .page-icon { font-size: 2.4rem; margin-bottom: 10px; display: block; }
-    h1 { font-family: 'DM Serif Display', serif; font-size: 2rem; font-weight: 400; }
-    header p { color: var(--muted); font-size: 0.95rem; margin-top: 8px; }
-    .tags { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
-    .tag { font-family: 'DM Mono', monospace; font-size: 0.72rem; padding: 2px 10px; border-radius: 4px; color: white; font-weight: 500; }
-    .tag.r { background: var(--tag-r); }
+/* HEADER */
+header{padding:40px 24px 32px;text-align:center;border-bottom:1px solid var(--bor);background:radial-gradient(ellipse at 50% 0%,#111d2a,var(--bg) 70%);}
+.icon{font-size:2.4rem;display:block;margin-bottom:10px;}
+h1{font-family:'DM Serif Display',serif;font-size:2rem;font-weight:400;}
+header p{color:var(--mut);font-size:.95rem;margin-top:8px;}
+.hdr-tags{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;}
+.ht{font-family:'DM Mono',monospace;font-size:.72rem;padding:2px 10px;border-radius:4px;color:#fff;font-weight:500;}
+.ht-r{background:var(--r);}
 
-    .action-bar { max-width: 900px; margin: 28px auto 0; padding: 0 24px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
-    .btn { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.875rem; padding: 9px 18px; border-radius: 8px; text-decoration: none; transition: opacity 0.2s; white-space: nowrap; }
-    .btn-upload { background: var(--accent2); color: #0d1117; }
-    .btn-github { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-    .btn:hover { opacity: 0.8; }
+/* ACTION BAR */
+.abar{max-width:880px;margin:26px auto 0;padding:0 24px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;}
+.btn{display:inline-flex;align-items:center;gap:7px;font-weight:600;font-size:.875rem;padding:9px 18px;border-radius:8px;text-decoration:none;transition:opacity .2s;white-space:nowrap;}
+.btn:hover{opacity:.8;text-decoration:none;}
+.btn-g{background:var(--sur);color:var(--txt);border:1px solid var(--bor);}
+.btn-u{background:var(--grn);color:#0d1117;}
 
-    main { max-width: 900px; margin: 0 auto; padding: 28px 24px 80px; }
+/* MAIN */
+main{max-width:880px;margin:0 auto;padding:28px 24px 80px;}
+.slabel{font-size:.68rem;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--mut);margin:36px 0 14px;display:flex;align-items:center;gap:10px;}
+.slabel::after{content:'';flex:1;height:1px;background:var(--bor);}
 
-    .section-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; margin-top: 36px; display: flex; align-items: center; gap: 10px; }
-    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+/* FOLDER CARDS */
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;}
+.fcard{background:var(--sur);border:1px solid var(--bor);border-radius:12px;padding:22px;display:block;text-decoration:none;color:var(--txt);transition:border-color .2s,transform .2s,box-shadow .2s;}
+.fcard:hover{border-color:var(--acc);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.3);text-decoration:none;}
+.fcard.dashed{border-style:dashed;opacity:.55;cursor:default;}
+.fcard.dashed:hover{transform:none;box-shadow:none;border-color:var(--bor);}
+.ftop{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.fic{font-size:1.5rem;}
+.fname{font-family:'DM Serif Display',serif;font-size:1.05rem;font-weight:400;}
+.fdesc{font-size:.82rem;color:var(--mut);margin-bottom:12px;line-height:1.6;}
+.ftags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.ft{font-family:'DM Mono',monospace;font-size:.68rem;padding:2px 7px;border-radius:3px;color:#fff;}
+.ft-r{background:var(--r);}
+.fgo{font-size:.8rem;color:var(--acc);}
+.badge{font-size:.65rem;background:#1a2e1a;color:var(--grn);border:1px solid #2a4a2a;border-radius:4px;padding:1px 7px;font-family:'DM Mono',monospace;}
 
-    .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
-    .folder-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; text-decoration: none; color: var(--text); display: block; transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s; }
-    .folder-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-    .fc-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-    .fc-icon { font-size: 1.6rem; }
-    .fc-title { font-family: 'DM Serif Display', serif; font-size: 1.1rem; font-weight: 400; }
-    .fc-desc { font-size: 0.82rem; color: var(--muted); margin-bottom: 12px; line-height: 1.6; }
-    .fc-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
-    .file-ext { font-family: 'DM Mono', monospace; font-size: 0.7rem; padding: 2px 8px; border-radius: 3px; color: white; }
-    .ext-r    { background: var(--tag-r); }
-    .ext-other{ background: #444; }
-    .fc-link { font-size: 0.82rem; color: var(--accent); }
+/* FILE TABLE */
+.twrap{background:var(--sur);border:1px solid var(--bor);border-radius:10px;overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:.875rem;}
+thead{background:var(--sur2);font-size:.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--mut);}
+th{padding:10px 16px;text-align:left;border-bottom:1px solid var(--bor);}
+td{padding:11px 16px;border-bottom:1px solid var(--bor);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--sur2);}
+.fext{font-family:'DM Mono',monospace;font-size:.68rem;padding:2px 7px;border-radius:3px;color:#fff;}
+.fe-r{background:var(--r);}
+.fe-o{background:#444;}
 
-    /* Suggested folders (not yet created) */
-    .folder-card.suggested { border-style: dashed; opacity: 0.6; cursor: default; }
-    .folder-card.suggested:hover { transform: none; box-shadow: none; border-color: var(--border); }
-    .suggested-badge { font-size: 0.7rem; background: #1f2d1f; color: var(--accent2); border: 1px solid #2d4a2d; border-radius: 4px; padding: 1px 7px; margin-left: 8px; font-family: 'DM Mono', monospace; }
+/* HOW BOX */
+.hbox{background:var(--sur);border:1px solid var(--bor);border-radius:10px;overflow:hidden;}
+.hhead{padding:12px 20px;background:var(--sur2);border-bottom:1px solid var(--bor);font-size:.875rem;font-weight:600;}
+.hbody{padding:18px 22px;}
+ol{padding-left:18px;}
+li{font-size:.875rem;margin-bottom:9px;}
+li span{color:var(--mut);}
+code{font-family:'DM Mono',monospace;background:var(--sur2);border:1px solid var(--bor);border-radius:3px;padding:1px 6px;font-size:.8rem;color:var(--acc);}
 
-    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-    .file-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-    .file-table thead { background: var(--surface2); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
-    .file-table th { padding: 10px 16px; text-align: left; border-bottom: 1px solid var(--border); }
-    .file-table td { padding: 11px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    .file-table tr:last-child td { border-bottom: none; }
-    .file-table tr:hover td { background: var(--surface2); }
-    .file-table a { color: var(--accent); text-decoration: none; }
-    .file-table a:hover { text-decoration: underline; }
+/* CALLOUTS */
+.note{background:#161d2a;border:1px solid #1e3a5f;border-radius:8px;padding:12px 16px;font-size:.84rem;color:#79b8f3;margin-top:14px;display:flex;gap:10px;}
+.warn{background:#1f1a10;border:1px solid #4a3800;border-radius:8px;padding:12px 16px;font-size:.84rem;color:#e3b341;margin-top:12px;display:flex;gap:10px;}
 
-    .how-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-    .how-header { padding: 12px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); font-size: 0.875rem; font-weight: 600; }
-    .how-body { padding: 18px 22px; }
-    ol { padding-left: 18px; }
-    ol li { font-size: 0.875rem; margin-bottom: 9px; }
-    ol li span { color: var(--muted); }
-    code { font-family: 'DM Mono', monospace; background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; padding: 1px 6px; font-size: 0.82rem; color: var(--accent); }
+/* STATE */
+.sbox{text-align:center;padding:36px;color:var(--mut);font-size:.875rem;}
+.spin{display:inline-block;width:18px;height:18px;border:2px solid var(--bor);border-top-color:var(--acc);border-radius:50%;animation:sp .8s linear infinite;margin-bottom:8px;}
+@keyframes sp{to{transform:rotate(360deg);}}
 
-    .note { background: #161d2a; border: 1px solid #1e3a5f; border-radius: 8px; padding: 12px 16px; font-size: 0.84rem; color: #79b8f3; margin-top: 14px; display: flex; gap: 10px; }
-    .warn { background: #1f1a10; border: 1px solid #4a3800; border-radius: 8px; padding: 12px 16px; font-size: 0.84rem; color: #e3b341; margin-top: 12px; display: flex; gap: 10px; }
-
-    .state-box { text-align: center; padding: 36px; color: var(--muted); font-size: 0.875rem; }
-    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 8px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    footer { text-align: center; padding: 28px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); }
-    footer a { color: var(--muted); text-decoration: none; }
-    footer a:hover { color: var(--accent); }
-
-    @media (max-width: 600px) {
-      h1 { font-size: 1.6rem; }
-      nav { font-size: 0.78rem; }
-      .action-bar { justify-content: stretch; }
-      .btn { width: 100%; justify-content: center; }
-    }
-  </style>
+footer{text-align:center;padding:28px;border-top:1px solid var(--bor);font-size:.8rem;color:var(--mut);}
+footer a{color:var(--mut);}footer a:hover{color:var(--acc);}
+@media(max-width:600px){h1{font-size:1.6rem;}.abar{justify-content:stretch;}.btn{width:100%;justify-content:center;}}
+</style>
 </head>
 <body>
 
 <nav>
-  <a href="https://longden-lab.github.io/Lab-scripts/">🏠 Home</a>
+  <a href="https://longden-lab.github.io/Lab-scripts/">&#127968; Home</a>
   <span class="sep">/</span>
-  <span>🧬 Bioinformatics</span>
+  <span>&#129516; Bioinformatics</span>
 </nav>
 
 <header>
-  <span class="page-icon">🧬</span>
+  <span class="icon">&#129516;</span>
   <h1>Bioinformatics</h1>
   <p>scRNA-seq, RiboTag-seq, and data visualization scripts</p>
-  <div class="tags">
-    <span class="tag r">R</span>
-  </div>
+  <div class="hdr-tags"><span class="ht ht-r">R</span></div>
 </header>
 
-<div class="action-bar">
-  <a class="btn btn-github" href="https://github.com/Longden-lab/Lab-scripts/tree/main/Bioinformatics" target="_blank">
+<div class="abar">
+  <a class="btn btn-g" href="https://github.com/Longden-lab/Lab-scripts/tree/main/Bioinformatics" target="_blank">
     <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
     View on GitHub
   </a>
-  <a class="btn btn-upload" href="https://github.com/Longden-lab/Lab-scripts/upload/main/Bioinformatics" target="_blank">
-    ⬆ Upload to this folder
-  </a>
+  <a class="btn btn-u" href="https://github.com/Longden-lab/Lab-scripts/upload/main/Bioinformatics" target="_blank">&#11014; Upload to this folder</a>
 </div>
 
 <main>
-
-  <div class="section-label">Subfolders</div>
-  <div class="folder-grid" id="folder-grid">
-    <div class="state-box" style="grid-column:1/-1"><div class="spinner"></div><br>Loading…</div>
+  <div class="slabel">Subfolders</div>
+  <div class="fgrid" id="fg">
+    <div class="sbox" style="grid-column:1/-1"><div class="spin"></div><br>Loading&#8230;</div>
   </div>
 
-  <div class="section-label">Files directly in this folder</div>
-  <div class="table-wrap">
-    <table class="file-table">
-      <thead><tr><th>File name</th><th>Type</th><th>View</th><th>Download</th></tr></thead>
-      <tbody id="file-tbody">
-        <tr><td colspan="4"><div class="state-box"><div class="spinner"></div><br>Loading…</div></td></tr>
-      </tbody>
+  <div class="slabel">Files directly in this folder</div>
+  <div class="twrap">
+    <table><thead><tr><th>File name</th><th>Type</th><th>View</th><th>Download</th></tr></thead>
+    <tbody id="tb"><tr><td colspan="4"><div class="sbox"><div class="spin"></div><br>Loading&#8230;</div></td></tr></tbody>
     </table>
   </div>
+  <div class="note">&#128161; <span>Name files as <code>topic_yourname.R</code> &#8212; e.g., <code>scRNAseq_clustering_Gyu.R</code></span></div>
 
-  <div class="note">💡 <span>Name files as <code>topic_yourname.ext</code> — e.g., <code>scRNAseq_clustering_Gyu.R</code> &nbsp;|&nbsp; Use <code>_</code> instead of spaces</span></div>
-
-  <div class="section-label" style="margin-top:44px;">Need a new subfolder?</div>
-  <div class="how-box">
-    <div class="how-header">📁 How to create a new folder inside Bioinformatics</div>
-    <div class="how-body">
+  <div class="slabel" style="margin-top:44px">Need a new subfolder?</div>
+  <div class="hbox">
+    <div class="hhead">&#128193; How to create a new folder inside Bioinformatics</div>
+    <div class="hbody">
       <ol>
-        <li>Go to <a href="https://github.com/Longden-lab/Lab-scripts/tree/main/Bioinformatics" target="_blank" style="color:var(--accent)">this folder on GitHub</a></li>
-        <li>Click <strong>"Add file"</strong> → <strong>"Create new file"</strong></li>
-        <li>In the name box type: <code>your_folder_name/README.md</code> <span>(the <code>/</code> creates the folder)</span></li>
-        <li>Write a short description of what belongs in this folder</li>
+        <li>Go to <a href="https://github.com/Longden-lab/Lab-scripts/tree/main/Bioinformatics" target="_blank">this folder on GitHub</a></li>
+        <li>Click <strong>"Add file"</strong> &#8594; <strong>"Create new file"</strong></li>
+        <li>In the name box type: <code>your_folder_name/README.md</code><br><span>The <code>/</code> automatically creates the folder</span></li>
+        <li>Write a short description in the file body</li>
         <li>Click <strong>"Commit changes"</strong></li>
       </ol>
-      <div class="warn">⚠️ <span>Use <code>_</code> instead of spaces — e.g., <code>RiboTag_seq</code> not <code>RiboTag seq</code></span></div>
+      <div class="warn">&#9888;&#65039; <span>Use <code>_</code> not spaces &#8212; e.g., <code>RiboTag_seq</code> not <code>RiboTag seq</code></span></div>
     </div>
   </div>
-
 </main>
 
-<footer>
-  <a href="https://longden-lab.github.io/Lab-scripts/">← Back to Longden Lab Home</a>
-</footer>
+<footer><a href="https://longden-lab.github.io/Lab-scripts/">&#8592; Back to Longden Lab Home</a></footer>
 
 <script>
-  const REPO   = 'Longden-lab/Lab-scripts';
-  const FOLDER = 'Bioinformatics';
-  const API    = `https://api.github.com/repos/${REPO}/contents/${FOLDER}`;
-
-  // Metadata for known/expected subfolders
-  const META = {
-    'scRNAseq':    { icon:'🧫', desc:'Single-cell RNA sequencing analysis, clustering, and visualization', tags:[['R','ext-r']] },
-    'RiboTag_seq': { icon:'🧪', desc:'RiboTag-seq processing and differential expression analysis',       tags:[['R','ext-r']] },
+(function(){
+  var REPO='Longden-lab/Lab-scripts', FOLDER='Bioinformatics';
+  var META={
+    'scRNAseq':   {icon:'&#129515;',desc:'Single-cell RNA sequencing analysis and visualization',tags:['R']},
+    'RiboTag_seq':{icon:'&#129514;',desc:'RiboTag-seq processing and differential expression',   tags:['R']}
   };
-
-  // Suggested folders shown as placeholders if not yet created
-  const SUGGESTED = [
-    { name:'scRNAseq',    icon:'🧫', desc:'For scRNA-seq analysis scripts' },
-    { name:'RiboTag_seq', icon:'🧪', desc:'For RiboTag-seq analysis scripts' },
+  var SUGGESTED=[
+    {name:'scRNAseq',   icon:'&#129515;',desc:'Suggested folder for scRNA-seq scripts'},
+    {name:'RiboTag_seq',icon:'&#129514;',desc:'Suggested folder for RiboTag-seq scripts'}
   ];
 
-  function extTag(filename) {
-    const ext = filename.split('.').pop().toLowerCase();
-    if (['r','rmd','rdata'].includes(ext)) return `<span class="file-ext ext-r">R</span>`;
-    return `<span class="file-ext ext-other">${ext.toUpperCase()}</span>`;
-  }
-  function fileIcon(n) {
-    return ['r','rmd','rdata'].includes(n.split('.').pop().toLowerCase()) ? '🔵' : '📄';
+  function extTag(n){
+    var e=n.split('.').pop().toLowerCase();
+    if(['r','rmd','rdata'].indexOf(e)>-1) return '<span class="fext fe-r">R</span>';
+    return '<span class="fext fe-o">'+e.toUpperCase()+'</span>';
   }
 
-  async function load() {
-    try {
-      const items = await fetch(API).then(r => { if(!r.ok) throw new Error(); return r.json(); });
-      const folders = items.filter(i => i.type === 'dir');
-      const files   = items.filter(i => i.type === 'file' && !i.name.startsWith('.') && !['index.html','README.md'].includes(i.name));
+  fetch('https://api.github.com/repos/'+REPO+'/contents/'+FOLDER)
+  .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+  .then(function(items){
+    var folders=items.filter(function(i){return i.type==='dir';});
+    var files=items.filter(function(i){
+      return i.type==='file'&&i.name.charAt(0)!=='.'&&i.name!=='index.html'&&i.name!=='README.md';
+    });
+    var existing=folders.map(function(f){return f.name;});
 
-      const fg = document.getElementById('folder-grid');
-      const existingNames = folders.map(f => f.name);
+    // Folder cards
+    var html=folders.map(function(f){
+      var m=META[f.name]||{icon:'&#128193;',desc:'Click to explore',tags:[]};
+      var tags=m.tags.map(function(t){return '<span class="ft ft-r">'+t+'</span>';}).join(' ');
+      var url='https://github.com/Longden-lab/Lab-scripts/tree/main/'+FOLDER+'/'+encodeURIComponent(f.name);
+      return '<a class="fcard" href="'+url+'" target="_blank">'
+        +'<div class="ftop"><span class="fic">'+m.icon+'</span><span class="fname">'+f.name+'</span></div>'
+        +'<p class="fdesc">'+m.desc+'</p>'
+        +'<div class="ftags">'+tags+'</div>'
+        +'<span class="fgo">Open folder &#8594;</span></a>';
+    });
 
-      // Real folders
-      const realCards = folders.map(f => {
-        const m = META[f.name] || { icon:'📁', desc:'Click to explore scripts', tags:[] };
-        const tagHtml = m.tags.map(([l,c]) => `<span class="file-ext ${c}">${l}</span>`).join(' ');
-        return `
-          <a class="folder-card" href="https://github.com/Longden-lab/Lab-scripts/tree/main/${FOLDER}/${encodeURIComponent(f.name)}" target="_blank">
-            <div class="fc-top"><span class="fc-icon">${m.icon}</span><span class="fc-title">${f.name}</span></div>
-            <p class="fc-desc">${m.desc}</p>
-            <div class="fc-tags">${tagHtml}</div>
-            <span class="fc-link">Open folder →</span>
-          </a>`;
-      });
+    // Suggested placeholders
+    SUGGESTED.filter(function(s){return existing.indexOf(s.name)===-1;}).forEach(function(s){
+      html.push('<div class="fcard dashed">'
+        +'<div class="ftop"><span class="fic">'+s.icon+'</span><span class="fname">'+s.name+'</span>'
+        +'<span class="badge">not created yet</span></div>'
+        +'<p class="fdesc">'+s.desc+' &#8212; use the guide below to create it.</p></div>');
+    });
 
-      // Suggested folders not yet created
-      const suggestedCards = SUGGESTED
-        .filter(s => !existingNames.includes(s.name))
-        .map(s => `
-          <div class="folder-card suggested">
-            <div class="fc-top">
-              <span class="fc-icon">${s.icon}</span>
-              <span class="fc-title">${s.name}</span>
-              <span class="suggested-badge">not created yet</span>
-            </div>
-            <p class="fc-desc">${s.desc} — create this folder using the guide below.</p>
-          </div>`);
+    document.getElementById('fg').innerHTML=html.length
+      ? html.join('')
+      : '<div class="sbox" style="grid-column:1/-1">No subfolders yet &#8212; use the guide below.</div>';
 
-      const allCards = [...realCards, ...suggestedCards];
-      fg.innerHTML = allCards.length
-        ? allCards.join('')
-        : `<div class="state-box" style="grid-column:1/-1">No subfolders yet. Use the guide below — suggested: <code>scRNAseq</code> and <code>RiboTag_seq</code></div>`;
-
-      // Files
-      const tbody = document.getElementById('file-tbody');
-      if (files.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4"><div class="state-box">No scripts directly here yet.<br>Upload using the button above, or navigate into a subfolder.</div></td></tr>`;
-      } else {
-        tbody.innerHTML = files.map(f => `
-          <tr>
-            <td>${fileIcon(f.name)} <a href="${f.html_url}" target="_blank">${f.name}</a></td>
-            <td>${extTag(f.name)}</td>
-            <td><a href="${f.html_url}" target="_blank">👁 View</a></td>
-            <td><a href="${f.download_url}" download>⬇ Download</a></td>
-          </tr>`).join('');
-      }
-    } catch {
-      document.getElementById('folder-grid').innerHTML = `<div class="state-box" style="grid-column:1/-1">Could not load. <a href="https://github.com/${REPO}/tree/main/${FOLDER}" target="_blank">Open on GitHub →</a></div>`;
-      document.getElementById('file-tbody').innerHTML  = `<tr><td colspan="4"><div class="state-box">Could not load. <a href="https://github.com/${REPO}/tree/main/${FOLDER}" target="_blank">Open on GitHub →</a></div></td></tr>`;
-    }
-  }
-  load();
+    // File table
+    var rows=files.map(function(f){
+      return '<tr><td>&#128196; <a href="'+f.html_url+'" target="_blank">'+f.name+'</a></td>'
+        +'<td>'+extTag(f.name)+'</td>'
+        +'<td><a href="'+f.html_url+'" target="_blank">&#128065; View</a></td>'
+        +'<td><a href="'+f.download_url+'">&#11015; Download</a></td></tr>';
+    });
+    document.getElementById('tb').innerHTML=rows.length
+      ? rows.join('')
+      : '<tr><td colspan="4"><div class="sbox">No scripts here yet &#8212; upload above or navigate into a subfolder.</div></td></tr>';
+  })
+  .catch(function(){
+    var fb='<div class="sbox">Could not load &#8212; <a href="https://github.com/'+REPO+'/tree/main/'+FOLDER+'" target="_blank">Open on GitHub &#8594;</a></div>';
+    document.getElementById('fg').innerHTML='<div style="grid-column:1/-1">'+fb+'</div>';
+    document.getElementById('tb').innerHTML='<tr><td colspan="4">'+fb+'</td></tr>';
+  });
+})();
 </script>
 </body>
 </html>
