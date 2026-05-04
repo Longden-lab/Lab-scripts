@@ -3,70 +3,334 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Smith Lab Scripts</title>
+  <title>Longden Lab — Script Repository</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; max-width: 860px; margin: 60px auto; padding: 0 20px; color: #333; }
-    h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
-    h2 { color: #2980b9; margin-top: 40px; }
-    .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-    .card { background: #f4f8fb; border: 1px solid #d0e3f0; border-radius: 10px; padding: 20px; }
-    .card h3 { margin-top: 0; color: #2c3e50; }
-    .tag { display: inline-block; background: #3498db; color: white; border-radius: 12px;
-           padding: 2px 10px; font-size: 0.8em; margin: 2px; }
-    .tag.r { background: #276DC3; }
-    .tag.matlab { background: #e37f1e; }
-    .tag.python { background: #3776AB; }
-    a { color: #2980b9; }
-    .steps { background: #f9f9f9; border-left: 4px solid #3498db; padding: 15px 20px; border-radius: 4px; }
-    .steps ol { margin: 0; padding-left: 20px; }
-    footer { margin-top: 60px; font-size: 0.85em; color: #888; text-align: center; }
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2330;
+      --border: #2a3441;
+      --accent: #58a6ff;
+      --accent2: #3fb950;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --tag-r: #276DC3;
+      --tag-matlab: #c47a1e;
+      --tag-imagej: #6a4c9c;
+      --tag-python: #3776AB;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+
+    /* Header */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 48px 0 36px;
+      text-align: center;
+      background: radial-gradient(ellipse at 50% 0%, #1a2744 0%, var(--bg) 70%);
+    }
+
+    .lab-emoji {
+      font-size: 2.2rem;
+      letter-spacing: 4px;
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2.4rem;
+      font-weight: 400;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      color: var(--muted);
+      margin-top: 10px;
+      font-size: 1rem;
+      font-weight: 300;
+    }
+
+    .github-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 20px;
+      padding: 8px 18px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
+    .github-link:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Main layout */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    section { margin-bottom: 52px; }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Cards */
+    .card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color 0.2s, transform 0.2s;
+      display: block;
+    }
+    .card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .card-icon { font-size: 1.6rem; margin-bottom: 12px; display: block; }
+
+    .card h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.15rem;
+      font-weight: 400;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-bottom: 14px;
+      line-height: 1.6;
+    }
+
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      padding: 2px 9px;
+      border-radius: 4px;
+      color: white;
+      font-weight: 500;
+    }
+    .tag.r { background: var(--tag-r); }
+    .tag.matlab { background: var(--tag-matlab); }
+    .tag.imagej { background: var(--tag-imagej); }
+
+    /* Steps */
+    .steps-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .steps-header {
+      padding: 14px 20px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .steps-body { padding: 20px 24px; }
+
+    ol {
+      padding-left: 20px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    ol li { margin-bottom: 10px; color: var(--text); }
+    ol li span { color: var(--muted); }
+
+    code {
+      font-family: 'DM Mono', monospace;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 0.82rem;
+      color: var(--accent);
+    }
+
+    strong { font-weight: 600; }
+
+    /* Convention box */
+    .convention-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent2);
+      border-radius: 0 10px 10px 0;
+      padding: 18px 22px;
+    }
+    .convention-box p { font-size: 0.9rem; color: var(--muted); margin-bottom: 8px; }
+    .convention-box .example { color: var(--text); }
+
+    /* Note callout */
+    .note {
+      background: #161d2a;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: #79b8f3;
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 32px;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    @media (max-width: 600px) {
+      .card-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.8rem; }
+    }
   </style>
 </head>
 <body>
 
-  <h1>🔬 Smith Lab — Script Repository</h1>
-  <p>A shared hub for lab analysis scripts. Browse by category below, or visit the 
-  <a href="https://github.com/SmithLab/lab-scripts" target="_blank">GitHub repository</a> directly.</p>
+<header>
+  <span class="lab-emoji">🐭 🧠 🩸</span>
+  <h1>Longden Lab — Script Repository</h1>
+  <p>A shared space for storing and accessing analysis scripts used in the lab.</p>
+  <a class="github-link" href="https://github.com/Longden-lab/Lab-scripts" target="_blank">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    View on GitHub
+  </a>
+</header>
 
-  <h2>📁 Script Categories</h2>
-  <div class="card-grid">
-    <div class="card">
-      <h3>📷 Image Processing</h3>
-      <p>Microscopy, cell segmentation, fluorescence quantification, and image analysis pipelines.</p>
-      <span class="tag python">Python</span>
-      <span class="tag matlab">MATLAB</span>
-      <br><br>
-      <a href="https://github.com/SmithLab/lab-scripts/tree/main/image_processing">→ Browse scripts</a>
+<main>
+
+  <!-- Repository Structure -->
+  <section>
+    <div class="section-label">Repository Structure</div>
+    <div class="card-grid">
+
+      <a class="card" href="https://github.com/Longden-lab/Lab-scripts/tree/main/image_processing" target="_blank">
+        <span class="card-icon">📷</span>
+        <h3>Image Processing</h3>
+        <p>2P imaging, confocal analysis, and image quantification pipelines.</p>
+        <div class="tags">
+          <span class="tag matlab">MATLAB</span>
+          <span class="tag r">R</span>
+          <span class="tag imagej">ImageJ Macro</span>
+        </div>
+      </a>
+
+      <a class="card" href="https://github.com/Longden-lab/Lab-scripts/tree/main/Bioinformatics" target="_blank">
+        <span class="card-icon">🧬</span>
+        <h3>Bioinformatics</h3>
+        <p>scRNA-seq, RiboTag-seq, and data visualization workflows.</p>
+        <div class="tags">
+          <span class="tag r">R</span>
+        </div>
+      </a>
+
     </div>
-    <div class="card">
-      <h3>🧬 Bioinformatics</h3>
-      <p>scRNA-seq, genomics, differential expression, dimensionality reduction, and visualization.</p>
-      <span class="tag r">R</span>
-      <span class="tag python">Python</span>
-      <br><br>
-      <a href="https://github.com/SmithLab/lab-scripts/tree/main/bioinformatics">→ Browse scripts</a>
+  </section>
+
+  <!-- How to Use -->
+  <section>
+    <div class="section-label">How to Use</div>
+
+    <div class="steps-block">
+      <div class="steps-header">🚀 Uploading a Script</div>
+      <div class="steps-body">
+        <ol>
+          <li>Navigate to the correct folder <span>(e.g., <code>image_processing/</code> or <code>Bioinformatics/</code>)</span></li>
+          <li>Click <strong>"Add file"</strong> → <strong>"Upload files"</strong></li>
+          <li>Drag and drop your script file</li>
+          <li>Add a short description at the bottom under <strong>"Commit changes"</strong></li>
+          <li>Click <strong>"Commit changes"</strong> — done!</li>
+        </ol>
+      </div>
     </div>
-  </div>
 
-  <h2>🚀 How to Upload a Script</h2>
-  <div class="steps">
-    <ol>
-      <li>Go to the <a href="https://github.com/SmithLab/lab-scripts" target="_blank">GitHub repository</a> and log in</li>
-      <li>Navigate into the correct folder (e.g., <code>bioinformatics/R/</code>)</li>
-      <li>Click <strong>"Add file" → "Upload files"</strong></li>
-      <li>Drag and drop your script file</li>
-      <li>Add a short description at the bottom under "Commit changes"</li>
-      <li>Click <strong>"Commit changes"</strong> — done!</li>
-    </ol>
-  </div>
+    <div class="steps-block">
+      <div class="steps-header">📁 Creating a New Folder</div>
+      <div class="steps-body">
+        <ol>
+          <li>Navigate to where you want the new folder</li>
+          <li>Click <strong>"Add file"</strong> → <strong>"Create new file"</strong></li>
+          <li>In the filename box, type your folder name followed by <code>/</code> and a filename:<br>
+            e.g. <code>new_folder_name/README.md</code><br>
+            <span style="color:var(--muted); font-size:0.85rem;">Typing <code>/</code> automatically tells GitHub to treat it as a folder</span>
+          </li>
+          <li>Add a short description of what the folder is for in the file body</li>
+          <li>Click <strong>"Commit changes"</strong></li>
+        </ol>
+        <div class="note">
+          💡 The <code>README.md</code> you create inside will automatically display as the folder's description — always fill it in with a sentence about what belongs there.
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <h2>📋 File Naming Convention</h2>
-  <p>Please name files as: <code>topic_method_yourname.ext</code><br>
-  Example: <code>cellsegmentation_watershed_jane.py</code></p>
+  <!-- Naming Convention -->
+  <section>
+    <div class="section-label">File Naming Convention</div>
+    <div class="convention-box">
+      <p>Please name your files clearly using this format:</p>
+      <p><code>topic_yourname.ext</code></p>
+      <p class="example" style="margin-top: 10px;">Example: &nbsp;<code>PAdiameter_Gyu.R</code></p>
+    </div>
+  </section>
 
-  <h2>📬 Contact</h2>
-  <p>Questions? Email the lab manager at <a href="mailto:lab@university.edu">lab@university.edu</a></p>
+</main>
 
-  <footer>Smith Lab · University Name · Updated 2025</footer>
+<footer>
+  Longden Lab · Script Repository · <a href="https://github.com/Longden-lab/Lab-scripts" style="color:var(--muted)">github.com/Longden-lab</a>
+</footer>
+
 </body>
 </html>
