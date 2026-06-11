@@ -1,6 +1,7 @@
-# app.R — Mural cell gene expression explorer
-# User types one or more genes; the app renders bar graphs, a UMAP feature
-# plot, and violin plots across mural cell classes.
+# app.R — Mural cell gene expression explorer (password-gated)
+# User must enter a password before the gene search is shown.
+# The password is read from the APP_PASSWORD environment variable
+# (set as a secret in Connect Cloud, NEVER committed to the repo).
 
 library(shiny)
 library(Seurat)
@@ -11,12 +12,10 @@ library(patchwork)
 library(httr)
 
 # ── Fetch the data object from a PRIVATE GitHub repo at startup ──────────────
-# The .rds is NOT in this (public) repo. It lives in a private repo and is
-# pulled once, using a read-only token supplied via the DATA_REPO_TOKEN
-# environment variable (set as a secret in Connect Cloud, never committed).
-data_repo <- "Qbottle/data"        # <- your PRIVATE repo (owner/name)
+
+data_repo <- "Qbottle/data"                       # <- PRIVATE repo (owner/name)
 data_file <- "data/mural_obj_for_suyeon.rds"      # <- path to the file inside it
-rds_path  <- "mural_obj_for_suyeon.rds"      # local filename to write
+rds_path  <- "mural_obj_for_suyeon.rds"           # local filename to write
 
 if (!file.exists(rds_path)) {
   token <- Sys.getenv("DATA_REPO_TOKEN")
@@ -102,41 +101,73 @@ make_violin <- function(genes) {
           axis.title.x = element_blank(), axis.text.x = element_text(angle = 0, hjust = 0.5))
 }
 
-# ── UI ───────────────────────────────────────────────────────────────────────
-ui <- fluidPage(
-  titlePanel("Mural cell gene expression"),
-  sidebarLayout(
-    sidebarPanel(
-      width = 3,
-      textAreaInput("genes", "Gene(s) — comma or space separated",
-                    value = "Kcnj8, Adra1a, Ednra", rows = 3,
-                    placeholder = "e.g. Kcnj8, Adra1a, Ednra"),
-      actionButton("go", "Plot", class = "btn-primary"),
-      tags$hr(),
-      uiOutput("status"),
-      tags$hr(),
-      tags$small(sprintf("%d genes available in this dataset.", length(all_genes)))
-    ),
-    mainPanel(
-      width = 9,
-      h4("Reference UMAP"),
-      plotOutput("ref", height = "420px"),
-      h4("Feature plot (UMAP)"),
-      plotOutput("feature"),
-      h4("Bar graph — 3 classes (aSMC / PC / vSMC)"),
-      plotOutput("bar"),
-      h4("Bar graph — subtypes (PC split: C_PC / Ts_PC)"),
-      plotOutput("bar_detail"),
-      h4("Violin — 3 classes"),
-      plotOutput("violin")
+# ── The real app UI, shown only after a correct password ─────────────────────
+main_ui <- function() {
+  tagList(
+    titlePanel("Mural cell gene expression"),
+    sidebarLayout(
+      sidebarPanel(
+        width = 3,
+        textAreaInput("genes", "Gene(s) — comma or space separated",
+                      value = "Kcnj8, Adra1a, Ednra", rows = 3,
+                      placeholder = "e.g. Kcnj8, Adra1a, Ednra"),
+        actionButton("go", "Plot", class = "btn-primary"),
+        tags$hr(),
+        uiOutput("status"),
+        tags$hr(),
+        tags$small(sprintf("%d genes available in this dataset.", length(all_genes)))
+      ),
+      mainPanel(
+        width = 9,
+        h4("Reference UMAP"),
+        plotOutput("ref", height = "420px"),
+        h4("Feature plot (UMAP)"),
+        plotOutput("feature"),
+        h4("Bar graph — 3 classes (aSMC / PC / vSMC)"),
+        plotOutput("bar"),
+        h4("Bar graph — subtypes (PC split: C_PC / Ts_PC)"),
+        plotOutput("bar_detail"),
+        h4("Violin — 3 classes"),
+        plotOutput("violin")
+      )
     )
   )
-)
+}
 
-# ── Server ───────────────────────────────────────────────────────────────────
+# ── The login screen ─────────────────────────────────────────────────────────
+login_ui <- function(msg = NULL) {
+  div(style = "max-width:340px; margin:80px auto; text-align:center;",
+      h3("Mural cell gene expression"),
+      p("Enter the password to continue."),
+      passwordInput("pw", NULL, placeholder = "Password"),
+      actionButton("login", "Enter", class = "btn-primary"),
+      if (!is.null(msg)) tags$p(style = "color:#b00; margin-top:12px;", msg)
+  )
+}
+
+# ── App ───────────────────────────────────────────────────────────────────────
+ui <- fluidPage(uiOutput("page"))
+
 server <- function(input, output, session) {
 
-  # Parse + validate genes when the button is clicked
+  authed <- reactiveVal(FALSE)
+
+  # Show login screen or the real app depending on auth state
+  output$page <- renderUI({
+    if (authed()) main_ui() else login_ui()
+  })
+
+  observeEvent(input$login, {
+    pw_set <- Sys.getenv("APP_PASSWORD")
+    if (nzchar(pw_set) && identical(input$pw, pw_set)) {
+      authed(TRUE)
+    } else {
+      output$page <- renderUI({ login_ui("Incorrect password.") })
+    }
+  })
+
+  # ---- everything below only matters once the real UI is on screen ----
+
   genes_r <- eventReactive(input$go, {
     raw <- unlist(strsplit(input$genes, "[,\\s]+"))
     raw <- trimws(raw)
@@ -147,6 +178,7 @@ server <- function(input, output, session) {
   }, ignoreNULL = FALSE)
 
   output$status <- renderUI({
+    req(authed())
     g <- genes_r()
     msgs <- list()
     if (length(g$found))
@@ -159,32 +191,31 @@ server <- function(input, output, session) {
     tagList(msgs)
   })
 
-  # Heights scale with the number of genes so grids don't get squashed
   feat_h <- function() { g <- genes_r()$found; 280 * ceiling(length(g) / min(4, max(1, length(g)))) }
   bar_h  <- function() { g <- genes_r()$found; 240 * ceiling(length(g) / min(5, max(1, length(g)))) }
   vln_h  <- function() { g <- genes_r()$found; 260 * ceiling(length(g) / min(4, max(1, length(g)))) }
 
-  output$ref <- renderPlot({ p_ref })
+  output$ref <- renderPlot({ req(authed()); p_ref })
 
   output$feature <- renderPlot({
-    g <- genes_r()$found; req(length(g) > 0); make_feature(g)
+    req(authed()); g <- genes_r()$found; req(length(g) > 0); make_feature(g)
   }, height = feat_h)
 
   output$bar <- renderPlot({
-    g <- genes_r()$found; req(length(g) > 0)
+    req(authed()); g <- genes_r()$found; req(length(g) > 0)
     make_bar(g, "mural_class", class_cols,
              "Mean expression across mural classes (all samples pooled)")
   }, height = bar_h)
 
   output$bar_detail <- renderPlot({
-    g <- genes_r()$found; req(length(g) > 0)
+    req(authed()); g <- genes_r()$found; req(length(g) > 0)
     make_bar(g, "mural_class_detail", class_cols_detail,
              "Mean expression across mural subtypes",
              "All samples pooled | aSMC = aSMC + aaSMC")
   }, height = bar_h)
 
   output$violin <- renderPlot({
-    g <- genes_r()$found; req(length(g) > 0); make_violin(g)
+    req(authed()); g <- genes_r()$found; req(length(g) > 0); make_violin(g)
   }, height = vln_h)
 }
 
