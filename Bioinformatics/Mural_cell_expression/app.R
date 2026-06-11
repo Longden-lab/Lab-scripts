@@ -8,9 +8,35 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(patchwork)
+library(httr)
+
+# ── Fetch the data object from a PRIVATE GitHub repo at startup ──────────────
+# The .rds is NOT in this (public) repo. It lives in a private repo and is
+# pulled once, using a read-only token supplied via the DATA_REPO_TOKEN
+# environment variable (set as a secret in Connect Cloud, never committed).
+data_repo <- "Qbottle/data/tree/main/data"        # <- your PRIVATE repo (owner/name)
+data_file <- "mural_obj_for_suyeon.rds"      # <- path to the file inside it
+rds_path  <- "mural_obj_for_suyeon.rds"      # local filename to write
+
+if (!file.exists(rds_path)) {
+  token <- Sys.getenv("DATA_REPO_TOKEN")
+  if (!nzchar(token)) stop("DATA_REPO_TOKEN is not set. Add it as a secret in Connect Cloud.")
+  api_url <- sprintf("https://api.github.com/repos/%s/contents/%s", data_repo, data_file)
+  resp <- httr::GET(
+    api_url,
+    httr::add_headers(
+      Authorization          = paste("Bearer", token),
+      Accept                 = "application/vnd.github.raw",
+      `X-GitHub-Api-Version` = "2022-11-28"
+    ),
+    httr::write_disk(rds_path, overwrite = TRUE),
+    httr::timeout(600)
+  )
+  httr::stop_for_status(resp)
+}
 
 # ── Load data ONCE at startup (not per request) ──────────────────────────────
-mural_obj <- readRDS("mural_obj_for_suyeon.rds")
+mural_obj <- readRDS(rds_path)
 DefaultAssay(mural_obj) <- "RNA"
 stopifnot("umap" %in% Reductions(mural_obj))
 
