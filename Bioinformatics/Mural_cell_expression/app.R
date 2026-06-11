@@ -14,8 +14,8 @@ library(httr)
 # The .rds is NOT in this (public) repo. It lives in a private repo and is
 # pulled once, using a read-only token supplied via the DATA_REPO_TOKEN
 # environment variable (set as a secret in Connect Cloud, never committed).
-data_repo <- "Qbottle/data/tree/main/data"        # <- your PRIVATE repo (owner/name)
-data_file <- "mural_obj_for_suyeon.rds"      # <- path to the file inside it
+data_repo <- "Qbottle/data"        # <- your PRIVATE repo (owner/name)
+data_file <- "data/mural_obj_for_suyeon.rds"      # <- path to the file inside it
 rds_path  <- "mural_obj_for_suyeon.rds"      # local filename to write
 
 if (!file.exists(rds_path)) {
