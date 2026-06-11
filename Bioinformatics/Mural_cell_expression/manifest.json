@@ -1940,7 +1940,12 @@
         "Maintainer": "Hadley Wickham <hadley@posit.co>",
         "Repository": "CRAN",
         "Date/Publication": "2026-02-13 16:20:15 UTC",
-        "Built": "R 4.6.0; ; 2026-05-28 02:43:38 UTC; windows"
+        "Built": "R 4.6.0; ; 2026-06-09 02:38:31 UTC; windows",
+        "RemoteType": "standard",
+        "RemotePkgRef": "httr",
+        "RemoteRef": "httr",
+        "RemoteRepos": "https://cran.rstudio.com",
+        "RemoteSha": "1.4.8"
       }
     },
     "ica": {
@@ -4061,6 +4066,9 @@
     },
     "mural_obj_for_suyeon.rds": {
       "checksum": "5e21cc6fa45e4a26b999455dcdb1014b"
+    },
+    "omnipathr-log/omnipathr-20260611-1523.log": {
+      "checksum": "d5e270884d965b723b27e0f4f232b936"
     }
   },
   "users": null
