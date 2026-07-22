@@ -169,7 +169,7 @@ server <- function(input, output, session) {
   # ---- everything below only matters once the real UI is on screen ----
 
   genes_r <- eventReactive(input$go, {
-    raw <- unlist(strsplit(input$genes, "[,\\s]+"))
+    raw <- unlist(strsplit(input$genes, "[,[:space:]]+"))
     raw <- trimws(raw)
     raw <- raw[nzchar(raw)]
     found   <- raw[raw %in% all_genes]
