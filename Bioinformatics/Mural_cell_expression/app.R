@@ -78,9 +78,13 @@ stopifnot("umap" %in% Reductions(mu))
 
 # ── Class definitions (labels live in mural_final) ───────────────────────────
 
+# 3-class grouping (PC collapsed). Not plotted on the page any more, but kept
+# so the collapsed view can be restored without redefining anything.
 class_map    <- c(aSMC = "aSMC", aaSMC = "aSMC", C_PC = "PC", Ts_PC = "PC", vSMC = "vSMC")
 class_levels <- c("aSMC", "PC", "vSMC")
 class_cols   <- c(aSMC = "firebrick", PC = "darkorange2", vSMC = "steelblue")
+
+# Subtype grouping — this is what the page shows.
 
 class_map_detail    <- c(aSMC = "aSMC", aaSMC = "aSMC", C_PC = "C_PC",
                          Ts_PC = "Ts_PC", vSMC = "vSMC")
@@ -167,9 +171,9 @@ make_feature <- function(genes) {
           axis.ticks = element_blank())
 }
 
-make_violin <- function(genes) {
-  VlnPlot(mu, features = genes, group.by = "mural_class", pt.size = 0,
-          cols = class_cols[class_levels], ncol = min(4, length(genes))) &
+make_violin <- function(genes, class_col, cols) {
+  VlnPlot(mu, features = genes, group.by = class_col, pt.size = 0,
+          cols = cols, ncol = min(4, length(genes))) &
     theme(plot.title = element_text(size = 11, face = "bold.italic"),
           axis.title.x = element_blank(),
           axis.text.x  = element_text(angle = 0, hjust = 0.5))
@@ -195,16 +199,24 @@ main_ui <- function() {
       ),
       mainPanel(
         width = 9,
-        h4("Reference UMAP"),
-        plotOutput("ref", height = "420px"),
-        h4("Feature plot (UMAP)"),
-        plotOutput("feature"),
-        h4("Bar graph — 3 classes (aSMC / PC / vSMC)"),
-        plotOutput("bar"),
+
+        # 1. Mean expression per subtype — the headline numbers
         h4("Bar graph — subtypes (PC split: C_PC / Ts_PC)"),
         plotOutput("bar_detail"),
-        h4("Violin — 3 classes"),
-        plotOutput("violin")
+
+        # 2. Same grouping, full distribution behind those means
+        h4("Violin — subtypes (PC split: C_PC / Ts_PC)"),
+        tags$small(style = "color:#666;",
+                   "All samples pooled | aSMC = aSMC + aaSMC"),
+        plotOutput("violin_detail"),
+
+        # 3. Where the subtypes sit in UMAP space
+        h4("Reference UMAP"),
+        plotOutput("ref", height = "420px"),
+
+        # 4. Per-cell expression on that same embedding
+        h4("Feature plot (UMAP)"),
+        plotOutput("feature")
       )
     )
   )
@@ -301,14 +313,6 @@ server <- function(input, output, session) {
     make_feature(g)
   }, height = feat_h)
 
-  output$bar <- renderPlot({
-    req(authed())
-    g <- genes_r()$found
-    req(length(g) > 0)
-    make_bar(g, "mural_class", class_cols,
-             "Mean expression across mural classes (all samples pooled)")
-  }, height = bar_h)
-
   output$bar_detail <- renderPlot({
     req(authed())
     g <- genes_r()$found
@@ -318,11 +322,11 @@ server <- function(input, output, session) {
              "All samples pooled | aSMC = aSMC + aaSMC")
   }, height = bar_h)
 
-  output$violin <- renderPlot({
+  output$violin_detail <- renderPlot({
     req(authed())
     g <- genes_r()$found
     req(length(g) > 0)
-    make_violin(g)
+    make_violin(g, "mural_class_detail", class_cols_detail[class_levels_detail])
   }, height = vln_h)
 }
 
