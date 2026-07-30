@@ -534,26 +534,50 @@ main_ui <- function() {
   )
 }
 
+# Deliberately NOT passwordInput + actionButton. Shiny's text input binding
+# debounces by 250 ms while actionButton clicks send immediately, so pressing
+# Enter straight after typing delivered the click before the password value and
+# the server compared against a stale one. A raw input plus one JS submit path
+# removes the race: the value is read from the DOM at submit time and travels
+# with the event. It also means partial passwords are no longer sent on every
+# keystroke, which passwordInput does.
 login_ui <- function(msg = NULL) {
   div(style = "max-width:340px; margin:80px auto; text-align:center;",
       h3("Mural cell gene expression"),
       p("Enter the password to continue."),
-      passwordInput("pw", NULL, placeholder = "Password"),
-      actionButton("login", "Enter", class = "btn-primary"),
-      if (!is.null(msg)) tags$p(style = "color:#b00; margin-top:12px;", msg)
+      tags$input(id = "pw", type = "password", class = "form-control",
+                 placeholder = "Password", autocomplete = "current-password",
+                 style = "text-align:center;"),
+      tags$button(id = "login", class = "btn btn-primary",
+                  style = "margin-top:10px;", onclick = "submitPassword()",
+                  "Enter"),
+      if (!is.null(msg)) tags$p(style = "color:#b00; margin-top:12px;", msg),
+      # Runs when Shiny inserts this HTML, so the field is ready to type into
+      tags$script(HTML(
+        "(function(){ var e = document.getElementById('pw'); if (e) e.focus(); })();"
+      ))
   )
 }
 
 ui <- fluidPage(
   tags$head(
     tags$style(HTML(app_css)),
-    # Enter submits the login form. Lives at the top level so it survives the
-    # login -> app swap; the guard means it does nothing once #login is gone.
+    # Both Enter and the button call submitPassword(), which reads the live DOM
+    # value and sends it as one event. Lives at the top level so it survives the
+    # login -> app swap; the #pw guard means Enter does nothing once logged in,
+    # leaving the gene textarea to behave normally.
     tags$script(HTML(
-      "document.addEventListener('keydown', function(e) {
+      "function submitPassword() {
+         var el = document.getElementById('pw');
+         if (!el || !window.Shiny) return;
+         Shiny.setInputValue('pw_submit', el.value, {priority: 'event'});
+         el.value = '';
+       }
+       document.addEventListener('keydown', function(e) {
          if (e.key !== 'Enter') return;
-         var btn = document.getElementById('login');
-         if (btn) { e.preventDefault(); btn.click(); }
+         if (!document.getElementById('pw')) return;
+         e.preventDefault();
+         submitPassword();
        });"
     ))
   ),
@@ -608,14 +632,16 @@ server <- function(input, output, session) {
     if (authed()) main_ui() else login_ui(login_msg())
   })
 
-  observeEvent(input$login, {
-    if (identical(input$pw, app_password)) {
+  # priority = "event" on the client means resubmitting the same wrong password
+  # still fires, rather than being dropped as an unchanged value.
+  observeEvent(input$pw_submit, {
+    if (identical(input$pw_submit, app_password)) {
       login_msg(NULL)
       authed(TRUE)
     } else {
       login_msg("Incorrect password. Check for stray spaces and try again.")
     }
-  })
+  }, ignoreInit = TRUE)
 
   genes_r <- eventReactive(input$go, {
     resolve_genes(input$genes)
