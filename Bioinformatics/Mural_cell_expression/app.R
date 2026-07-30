@@ -1,10 +1,14 @@
-# app.R — Mural cell gene expression explorer (password-gated)
+# app.R — Mural cell gene expression, side-by-side dataset comparison
+#
+# Left column  = our data
+# Right column = published data
+# Rows are matched by plot type so the two can be read one against the other.
 #
 # Secrets (set in Connect Cloud, never committed):
 #   APP_PASSWORD     — password users type on the login screen
 #   DATA_REPO_TOKEN  — GitHub PAT with read access to the private data repo
 #
-# The .rds is NEVER part of the deployed bundle. It is pulled from the private
+# Neither .rds is part of the deployed bundle. Both are pulled from the private
 # repo at startup into tempdir(), read into memory, then deleted from disk.
 
 library(shiny)
@@ -15,7 +19,57 @@ library(tidyr)
 library(patchwork)
 library(httr)
 
-# ── Secrets: fail loudly at startup rather than silently at login ────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# CONFIGURATION — edit this block, leave the rest alone
+# ══════════════════════════════════════════════════════════════════════════════
+
+data_repo <- "Qbottle/data"
+
+# Shared label vocabulary. Both datasets are mapped onto these levels, and a
+# label means the same thing in both panels. Colours are shared so a colour
+# means one cell type across the whole page.
+panel_levels <- c("aSMC", "C_PC", "Ts_PC", "vSMC")
+panel_cols   <- c(aSMC  = "firebrick",
+                  C_PC  = "darkorange2",
+                  Ts_PC = "goldenrod3",
+                  vSMC  = "steelblue")
+
+# Both objects carry `mural_final` with the same five levels, so a single
+# shared map serves both and the two configs differ only in provenance.
+shared_label_map <- c(aSMC = "aSMC", aaSMC = "aSMC",
+                      C_PC = "C_PC", Ts_PC = "Ts_PC", vSMC = "vSMC")
+
+# ── Left panel: our data ──
+cfg_left <- list(
+  key        = "left",
+  name       = "Our data",
+  subtitle   = "Mouse mural cells",
+  file       = "data/mural_obj_app.rds",
+  source_col = "mural_final",
+  label_map  = shared_label_map
+)
+
+# ── Right panel: published data ──
+# EDIT: replace the citation with the paper and accession you are citing.
+cfg_right <- list(
+  key        = "right",
+  name       = "Published (Betsholtz)",
+  subtitle   = "Mouse brain vasculature, plate-based | 1,375 cells | re-annotated",
+  file       = "data/Betsholtz_mural_app.rds",
+  source_col = "mural_final",
+  label_map  = shared_label_map
+)
+
+max_genes <- 8L   # lower than the single-panel version: 8 genes x 2 panels
+
+# Facet columns, tuned for half-width columns rather than full width
+ncol_bar     <- 3L
+ncol_violin  <- 2L
+ncol_feature <- 2L
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Secrets — fail loudly at startup rather than silently at login
+# ══════════════════════════════════════════════════════════════════════════════
 
 app_password <- Sys.getenv("APP_PASSWORD")
 if (!nzchar(app_password)) {
@@ -27,18 +81,13 @@ if (!nzchar(data_token)) {
   stop("DATA_REPO_TOKEN is not set. Add it as a secret in Connect Cloud.")
 }
 
-# ── Fetch the data object from the PRIVATE GitHub repo ───────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# Fetch and load
+# ══════════════════════════════════════════════════════════════════════════════
 
-data_repo <- "Qbottle/data"                  # private repo (owner/name)
-data_file <- "data/mural_obj_for_suyeon.rds" # path inside that repo
-
-# tempdir(), not the app directory: keeps the object out of git and out of any
-# path the Shiny server could serve, and lets the OS clean it up.
-rds_path <- file.path(tempdir(), "mural_obj.rds")
-
-fetch_data <- function(dest) {
-  api_url  <- sprintf("https://api.github.com/repos/%s/contents/%s", data_repo, data_file)
-  partial  <- paste0(dest, ".part")
+fetch_from_repo <- function(repo_path, dest) {
+  api_url <- sprintf("https://api.github.com/repos/%s/contents/%s", data_repo, repo_path)
+  partial <- paste0(dest, ".part")
   on.exit(unlink(partial), add = TRUE)
 
   resp <- httr::GET(
@@ -49,141 +98,201 @@ fetch_data <- function(dest) {
       `X-GitHub-Api-Version` = "2022-11-28"
     ),
     httr::write_disk(partial, overwrite = TRUE),
-    httr::timeout(600)
+    httr::timeout(900)
   )
   httr::stop_for_status(resp)
 
   # A failed request can still leave a small JSON error body on disk, and an
-  # interrupted transfer leaves a truncated file. Either would be cached as if
-  # it were valid, so check before promoting .part to the real filename.
+  # interrupted transfer leaves a truncated file. Either would load as if valid.
   if (!file.exists(partial) || file.size(partial) < 1e5) {
-    stop("Download of the data object failed or was truncated (",
-         "got ", if (file.exists(partial)) file.size(partial) else 0, " bytes).")
+    stop("Download of ", repo_path, " failed or was truncated (",
+         if (file.exists(partial)) file.size(partial) else 0, " bytes).")
   }
   if (!file.rename(partial, dest)) {
-    stop("Could not move the downloaded data object into place.")
+    stop("Could not move ", repo_path, " into place.")
   }
   invisible(dest)
 }
 
-fetch_data(rds_path)
+# Turns a config entry into everything the plot builders need.
+load_dataset <- function(cfg) {
+  message("Loading ", cfg$name, " ...")
+  dest <- file.path(tempdir(), paste0(cfg$key, ".rds"))
+  fetch_from_repo(cfg$file, dest)
+  obj <- readRDS(dest)
+  unlink(dest)   # private data does not linger on disk
 
-# ── Load once at startup, then remove the file from disk ─────────────────────
+  DefaultAssay(obj) <- "RNA"
+  if (!"umap" %in% Reductions(obj)) {
+    stop(cfg$name, ": no 'umap' reduction. Add one in prep_published.R.")
+  }
+  if (!cfg$source_col %in% colnames(obj@meta.data)) {
+    stop(cfg$name, ": metadata column '", cfg$source_col, "' not found. Found: ",
+         paste(colnames(obj@meta.data), collapse = ", "))
+  }
 
-mu <- readRDS(rds_path)
-unlink(rds_path)
+  # Map source labels onto the shared vocabulary, drop anything unmapped
+  mapped <- unname(cfg$label_map[as.character(obj@meta.data[[cfg$source_col]])])
+  unmapped <- setdiff(as.character(obj@meta.data[[cfg$source_col]]), names(cfg$label_map))
+  if (length(unmapped)) {
+    message(cfg$name, ": dropping unmapped labels: ", paste(unmapped, collapse = ", "))
+  }
+  obj$panel_class <- factor(mapped, levels = panel_levels)
+  obj <- obj[, !is.na(obj$panel_class)]
 
-DefaultAssay(mu) <- "RNA"
-stopifnot("umap" %in% Reductions(mu))
+  present <- panel_levels[panel_levels %in% levels(droplevels(obj$panel_class))]
+  genes   <- sort(rownames(obj))
 
-# ── Class definitions (labels live in mural_final) ───────────────────────────
+  # Case-insensitive index. Both datasets use mouse symbols with identical
+  # capitalisation, so no ortholog aliasing is needed; this only forgives typing
+  # "kcnj8" for "Kcnj8". Add an alias table here if a cross-species set is added.
+  lookup <- setNames(genes, toupper(genes))
 
-# 3-class grouping (PC collapsed). Not plotted on the page any more, but kept
-# so the collapsed view can be restored without redefining anything.
-class_map    <- c(aSMC = "aSMC", aaSMC = "aSMC", C_PC = "PC", Ts_PC = "PC", vSMC = "vSMC")
-class_levels <- c("aSMC", "PC", "vSMC")
-class_cols   <- c(aSMC = "firebrick", PC = "darkorange2", vSMC = "steelblue")
+  # Genes that exist as rownames but are zero in every cell. These would render
+  # a blank panel with no explanation, so they are reported separately from
+  # genes that are genuinely absent.
+  expressed <- genes[Matrix::rowSums(LayerData(obj, assay = "RNA", layer = "data")) > 0]
 
-# Subtype grouping — this is what the page shows.
+  ref_plot <- DimPlot(obj, group.by = "panel_class", reduction = "umap",
+                      label = TRUE, repel = TRUE, label.size = 4, pt.size = 0.5,
+                      cols = panel_cols[present]) +
+    labs(title = cfg$name, subtitle = cfg$subtitle) +
+    theme(plot.title    = element_text(face = "bold", size = 12),
+          plot.subtitle = element_text(size = 9, color = "grey30"))
 
-class_map_detail    <- c(aSMC = "aSMC", aaSMC = "aSMC", C_PC = "C_PC",
-                         Ts_PC = "Ts_PC", vSMC = "vSMC")
-class_levels_detail <- c("aSMC", "C_PC", "Ts_PC", "vSMC")
-class_cols_detail   <- c(aSMC = "firebrick", C_PC = "darkorange2",
-                         Ts_PC = "goldenrod3", vSMC = "steelblue")
+  list(
+    key      = cfg$key,
+    name     = cfg$name,
+    subtitle = cfg$subtitle,
+    obj      = obj,
+    present  = present,
+    genes    = genes,
+    lookup   = lookup,
+    expressed = expressed,
+    n_cells  = ncol(obj),
+    ref_plot = ref_plot
+  )
+}
 
-mu$mural_class <- factor(
-  unname(class_map[as.character(mu$mural_final)]), levels = class_levels
-)
-mu$mural_class_detail <- factor(
-  unname(class_map_detail[as.character(mu$mural_final)]), levels = class_levels_detail
-)
+datasets <- list(left = load_dataset(cfg_left), right = load_dataset(cfg_right))
 
-all_genes   <- sort(rownames(mu))
-gene_lookup <- setNames(all_genes, toupper(all_genes))  # case-insensitive matching
-max_genes   <- 12L                                      # cap plot size per query
+message("Loaded both datasets. Total in-memory size: ",
+        format(object.size(datasets), units = "MB"))
 
-# Reference UMAP — identical for every query, so build it once
-p_ref <- DimPlot(mu, group.by = "mural_final", reduction = "umap", label = TRUE,
-                 repel = TRUE, label.size = 4, pt.size = 0.5) +
-  labs(title = "Mural subtypes (reference)") +
-  theme(plot.title = element_text(face = "bold", size = 12))
+# ══════════════════════════════════════════════════════════════════════════════
+# Gene resolution
+# ══════════════════════════════════════════════════════════════════════════════
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
-
+# One query symbol can resolve to a different rowname in each dataset, and may
+# be absent from one of them. Resolve per dataset and report per dataset.
 resolve_genes <- function(txt) {
   if (is.null(txt)) txt <- ""
   raw <- trimws(unlist(strsplit(txt, "[,;[:space:]]+")))
   raw <- unique(raw[nzchar(raw)])
-  hits <- gene_lookup[toupper(raw)]
-  found <- unname(hits[!is.na(hits)])
+
+  in_any <- vapply(raw, function(q) {
+    any(vapply(datasets, function(d) !is.na(d$lookup[toupper(q)]), logical(1)))
+  }, logical(1))
+
+  queries <- head(raw[in_any], max_genes)
+
+  per_dataset <- lapply(datasets, function(d) {
+    hit   <- d$lookup[toupper(queries)]
+    found <- unname(hit[!is.na(hit)])
+    list(found      = found,
+         missing    = queries[is.na(hit)],                    # not in this dataset
+         undetected = setdiff(found, d$expressed))            # present but all-zero
+  })
+
   list(
-    found   = head(found, max_genes),
-    missing = raw[is.na(hits)],
-    dropped = max(0L, length(found) - max_genes)
+    queries     = queries,
+    unknown     = raw[!in_any],                        # in neither dataset
+    dropped     = max(0L, sum(in_any) - max_genes),
+    per_dataset = per_dataset,
+    # Row heights come from the larger side so the two columns stay aligned
+    n_rows_for  = max(vapply(per_dataset, function(p) length(p$found), integer(1)))
   )
 }
 
-# rows = ceiling(n / ncol), where ncol never exceeds the number of genes
 grid_height <- function(n, ncol_max, row_h) {
   if (n < 1) return(row_h)
   row_h * ceiling(n / min(ncol_max, n))
 }
 
-# ── Plot builders ────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# Plot builders — every one takes a dataset as its first argument
+# ══════════════════════════════════════════════════════════════════════════════
 
-make_bar <- function(genes, class_col, cols, title, subtitle = NULL) {
-  df <- FetchData(mu, vars = c(genes, class_col), layer = "data") %>%
+make_bar <- function(ds, genes) {
+  df <- FetchData(ds$obj, vars = c(genes, "panel_class"), layer = "data") %>%
     pivot_longer(all_of(genes), names_to = "gene", values_to = "expr") %>%
-    group_by(gene, .data[[class_col]]) %>%
+    group_by(gene, panel_class) %>%
     summarise(
       mean = mean(expr),
-      # sd() is NA for a single cell; treat that as no error bar
-      sem  = if (n() > 1) sd(expr) / sqrt(n()) else 0,
+      sem  = if (n() > 1) sd(expr) / sqrt(n()) else 0,   # sd() is NA for n = 1
       .groups = "drop"
     ) %>%
     mutate(gene = factor(gene, levels = genes))
-  names(df)[2] <- "grp"
 
-  ggplot(df, aes(grp, mean, fill = grp)) +
+  ggplot(df, aes(panel_class, mean, fill = panel_class)) +
     geom_col(width = 0.7) +
     geom_errorbar(aes(ymin = mean, ymax = mean + sem), width = 0.2, color = "grey30") +
     geom_text(aes(label = round(mean, 2), y = mean + sem), vjust = -0.4,
-              size = 2.8, color = "grey20") +
-    facet_wrap(~ gene, ncol = min(5, length(genes)), scales = "free_y") +
-    scale_fill_manual(values = cols) +
+              size = 2.6, color = "grey20") +
+    facet_wrap(~ gene, ncol = min(ncol_bar, length(genes)), scales = "free_y") +
+    scale_fill_manual(values = panel_cols, drop = FALSE) +
+    scale_x_discrete(drop = FALSE) +
     scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
-    labs(title = title, subtitle = subtitle, x = NULL, y = "Mean expression (log-norm)") +
-    theme_classic(base_size = 12) +
-    theme(plot.title    = element_text(face = "bold", size = 13),
-          plot.subtitle = element_text(size = 9, color = "grey30"),
-          strip.text    = element_text(face = "bold.italic"),
+    labs(title = ds$name, x = NULL, y = "Mean expression (log-norm)") +
+    theme_classic(base_size = 11) +
+    theme(plot.title  = element_text(face = "bold", size = 12),
+          strip.text  = element_text(face = "bold.italic"),
           legend.position = "none",
-          axis.text.x   = element_text(angle = 30, hjust = 1))
+          axis.text.x = element_text(angle = 30, hjust = 1))
 }
 
-make_feature <- function(genes) {
-  FeaturePlot(mu, features = genes, reduction = "umap", order = TRUE,
+make_violin <- function(ds, genes) {
+  VlnPlot(ds$obj, features = genes, group.by = "panel_class", pt.size = 0,
+          cols = panel_cols[ds$present],
+          ncol = min(ncol_violin, length(genes))) &
+    theme(plot.title   = element_text(size = 11, face = "bold.italic"),
+          axis.title.x = element_blank(),
+          axis.text.x  = element_text(angle = 30, hjust = 1))
+}
+
+make_feature <- function(ds, genes) {
+  FeaturePlot(ds$obj, features = genes, reduction = "umap", order = TRUE,
               pt.size = 0.5, cols = c("lightgrey", "firebrick"),
-              ncol = min(4, length(genes))) &
+              ncol = min(ncol_feature, length(genes))) &
     theme(plot.title = element_text(size = 11, face = "bold.italic"),
           axis.title = element_blank(), axis.text = element_blank(),
           axis.ticks = element_blank())
 }
 
-make_violin <- function(genes, class_col, cols) {
-  VlnPlot(mu, features = genes, group.by = class_col, pt.size = 0,
-          cols = cols, ncol = min(4, length(genes))) &
-    theme(plot.title = element_text(size = 11, face = "bold.italic"),
-          axis.title.x = element_blank(),
-          axis.text.x  = element_text(angle = 0, hjust = 0.5))
-}
+# ══════════════════════════════════════════════════════════════════════════════
+# UI
+# ══════════════════════════════════════════════════════════════════════════════
 
-# ── UI: gene explorer, shown only after a correct password ───────────────────
+# One row of the comparison: a heading, an optional note, then left | right
+compare_row <- function(heading, note, output_prefix, ref_height = NULL) {
+  panel <- function(side) {
+    id <- paste0(output_prefix, "_", side)
+    if (is.null(ref_height)) plotOutput(id) else plotOutput(id, height = ref_height)
+  }
+  tagList(
+    h4(heading),
+    if (!is.null(note)) tags$small(style = "color:#666;", note),
+    fluidRow(
+      column(6, panel("left")),
+      column(6, panel("right"))
+    ),
+    tags$hr()
+  )
+}
 
 main_ui <- function() {
   tagList(
-    titlePanel("Mural cell gene expression"),
+    titlePanel("Mural cell gene expression — dataset comparison"),
     sidebarLayout(
       sidebarPanel(
         width = 3,
@@ -194,29 +303,66 @@ main_ui <- function() {
         tags$hr(),
         uiOutput("status"),
         tags$hr(),
-        tags$small(sprintf("%d genes available in this dataset. Up to %d plotted at a time.",
-                           length(all_genes), max_genes))
+        tags$small(
+          tags$b(datasets$left$name), tags$br(),
+          sprintf("%s | %s cells | %s genes", datasets$left$subtitle,
+                  format(datasets$left$n_cells, big.mark = ","),
+                  format(length(datasets$left$genes), big.mark = ",")),
+          tags$br(), tags$br(),
+          tags$b(datasets$right$name), tags$br(),
+          sprintf("%s | %s cells | %s genes", datasets$right$subtitle,
+                  format(datasets$right$n_cells, big.mark = ","),
+                  format(length(datasets$right$genes), big.mark = ",")),
+          tags$br(), tags$br(),
+          sprintf("Up to %d genes plotted at a time.", max_genes)
+        )
       ),
       mainPanel(
         width = 9,
 
-        # 1. Mean expression per subtype — the headline numbers
-        h4("Bar graph — subtypes (PC split: C_PC / Ts_PC)"),
-        plotOutput("bar_detail"),
+        # Column headers, so the reader knows which side is which before scrolling
+        fluidRow(
+          column(6, div(style = "text-align:center; font-weight:600; padding:4px;
+                                 background:#f5f5f5; border-radius:4px;",
+                        datasets$left$name)),
+          column(6, div(style = "text-align:center; font-weight:600; padding:4px;
+                                 background:#f5f5f5; border-radius:4px;",
+                        datasets$right$name))
+        ),
+        tags$br(),
 
-        # 2. Same grouping, full distribution behind those means
-        h4("Violin — subtypes (PC split: C_PC / Ts_PC)"),
-        tags$small(style = "color:#666;",
-                   "All samples pooled | aSMC = aSMC + aaSMC"),
-        plotOutput("violin_detail"),
+        div(style = "background:#fff8e1; border-left:3px solid #d4a017;
+                     padding:8px 12px; margin-bottom:14px; font-size:13px;",
+            tags$b("Reading these panels."), tags$br(),
+            "The two datasets were generated on different platforms and were ",
+            "normalised independently. Compare the ", tags$i("pattern across cell types"),
+            " within each panel. Do not compare bar heights or colour intensities ",
+            "between the left and right panels: a difference there can reflect ",
+            "library preparation and sequencing depth rather than biology."
+        ),
 
-        # 3. Where the subtypes sit in UMAP space
-        h4("Reference UMAP"),
-        plotOutput("ref", height = "420px"),
-
-        # 4. Per-cell expression on that same embedding
-        h4("Feature plot (UMAP)"),
-        plotOutput("feature")
+        compare_row(
+          "Bar graph — subtypes (PC split: C_PC / Ts_PC)",
+          paste("All samples pooled | aSMC = aSMC + aaSMC |",
+                "y-axes independent | error bars are SEM, so their width tracks",
+                "the number of cells in each group as much as the spread."),
+          "bar"
+        ),
+        compare_row(
+          "Violin — subtypes (PC split: C_PC / Ts_PC)",
+          "Distribution behind the means above. Points hidden; width is density.",
+          "violin"
+        ),
+        compare_row(
+          "Reference UMAP",
+          "Embeddings are computed independently, so position is not comparable between panels.",
+          "ref", ref_height = "420px"
+        ),
+        compare_row(
+          "Feature plot (UMAP)",
+          "Colour scales are set per panel by that panel's maximum.",
+          "feature"
+        )
       )
     )
   )
@@ -232,8 +378,6 @@ login_ui <- function(msg = NULL) {
   )
 }
 
-# ── App ──────────────────────────────────────────────────────────────────────
-
 ui <- fluidPage(
   # Enter submits the login form. Lives at the top level so it survives the
   # login -> app swap; the guard means it does nothing once #login is gone.
@@ -247,6 +391,41 @@ ui <- fluidPage(
   uiOutput("page")
 )
 
+# ══════════════════════════════════════════════════════════════════════════════
+# Server
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Wires up the four outputs for one dataset. Called once per side, so the plot
+# code exists in exactly one place.
+register_panel <- function(output, ds, genes_r, authed) {
+  side <- ds$key
+  found <- function() genes_r()$per_dataset[[side]]$found
+  n_rows <- function() genes_r()$n_rows_for   # shared, so rows stay aligned
+
+  output[[paste0("ref_", side)]] <- renderPlot({
+    req(authed())
+    ds$ref_plot
+  })
+
+  output[[paste0("bar_", side)]] <- renderPlot({
+    req(authed())
+    g <- found(); req(length(g) > 0)
+    make_bar(ds, g)
+  }, height = function() grid_height(n_rows(), ncol_bar, 240))
+
+  output[[paste0("violin_", side)]] <- renderPlot({
+    req(authed())
+    g <- found(); req(length(g) > 0)
+    make_violin(ds, g)
+  }, height = function() grid_height(n_rows(), ncol_violin, 260))
+
+  output[[paste0("feature_", side)]] <- renderPlot({
+    req(authed())
+    g <- found(); req(length(g) > 0)
+    make_feature(ds, g)
+  }, height = function() grid_height(n_rows(), ncol_feature, 280))
+}
+
 server <- function(input, output, session) {
 
   authed    <- reactiveVal(FALSE)
@@ -254,7 +433,7 @@ server <- function(input, output, session) {
 
   # Depends on login_msg(), so a failed attempt re-renders the login screen
   # without detaching this output from authed() — a later correct password
-  # now works without a page reload.
+  # works without a page reload.
   output$page <- renderUI({
     if (authed()) main_ui() else login_ui(login_msg())
   })
@@ -268,8 +447,6 @@ server <- function(input, output, session) {
     }
   })
 
-  # ---- everything below is gated on authed() ----
-
   genes_r <- eventReactive(input$go, {
     resolve_genes(input$genes)
   }, ignoreNULL = FALSE)
@@ -278,56 +455,51 @@ server <- function(input, output, session) {
     req(authed())
     g <- genes_r()
     msgs <- list()
-    if (length(g$found)) {
-      msgs <- c(msgs, list(tags$p(tags$b("Found: "), paste(g$found, collapse = ", "))))
+
+    if (length(g$queries)) {
+      msgs <- c(msgs, list(tags$p(tags$b("Plotting: "),
+                                  paste(g$queries, collapse = ", "))))
     }
-    if (length(g$missing)) {
+    # Present in one dataset but not the other — the asymmetry readers need to see
+    for (d in datasets) {
+      miss <- g$per_dataset[[d$key]]$missing
+      if (length(miss)) {
+        msgs <- c(msgs, list(tags$p(
+          style = "color:#b00;",
+          tags$b(paste0("Not in ", d$name, ": ")), paste(miss, collapse = ", ")
+        )))
+      }
+    }
+    for (d in datasets) {
+      undet <- g$per_dataset[[d$key]]$undetected
+      if (length(undet)) {
+        msgs <- c(msgs, list(tags$p(
+          style = "color:#b8860b;",
+          tags$b(paste0("Zero in every ", d$name, " cell: ")),
+          paste(undet, collapse = ", ")
+        )))
+      }
+    }
+    if (length(g$unknown)) {
       msgs <- c(msgs, list(tags$p(style = "color:#b00;",
-                                  tags$b("Not in dataset: "),
-                                  paste(g$missing, collapse = ", "))))
+                                  tags$b("In neither dataset: "),
+                                  paste(g$unknown, collapse = ", "))))
     }
     if (g$dropped > 0) {
-      msgs <- c(msgs, list(tags$p(style = "color:#b00;",
-                                  sprintf("Showing the first %d genes; %d more were left out.",
-                                          max_genes, g$dropped))))
+      msgs <- c(msgs, list(tags$p(
+        style = "color:#b00;",
+        sprintf("Showing the first %d genes; %d more were left out.",
+                max_genes, g$dropped))))
     }
-    if (!length(g$found)) {
-      msgs <- c(msgs, list(tags$p(style = "color:#b00;", "Type at least one valid gene.")))
+    if (!length(g$queries)) {
+      msgs <- c(msgs, list(tags$p(style = "color:#b00;",
+                                  "Type at least one gene present in either dataset.")))
     }
     tagList(msgs)
   })
 
-  feat_h <- function() grid_height(length(genes_r()$found), 4, 280)
-  bar_h  <- function() grid_height(length(genes_r()$found), 5, 240)
-  vln_h  <- function() grid_height(length(genes_r()$found), 4, 260)
-
-  output$ref <- renderPlot({
-    req(authed())
-    p_ref
-  })
-
-  output$feature <- renderPlot({
-    req(authed())
-    g <- genes_r()$found
-    req(length(g) > 0)
-    make_feature(g)
-  }, height = feat_h)
-
-  output$bar_detail <- renderPlot({
-    req(authed())
-    g <- genes_r()$found
-    req(length(g) > 0)
-    make_bar(g, "mural_class_detail", class_cols_detail,
-             "Mean expression across mural subtypes",
-             "All samples pooled | aSMC = aSMC + aaSMC")
-  }, height = bar_h)
-
-  output$violin_detail <- renderPlot({
-    req(authed())
-    g <- genes_r()$found
-    req(length(g) > 0)
-    make_violin(g, "mural_class_detail", class_cols_detail[class_levels_detail])
-  }, height = vln_h)
+  register_panel(output, datasets$left,  genes_r, authed)
+  register_panel(output, datasets$right, genes_r, authed)
 }
 
 shinyApp(ui, server)
