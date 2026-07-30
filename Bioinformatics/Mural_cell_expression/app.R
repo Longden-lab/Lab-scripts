@@ -1,7 +1,7 @@
 # app.R — Mural cell gene expression, side-by-side dataset comparison
 #
-# Left column  = our data
-# Right column = published data
+# Left column  = our data (hippocampus)
+# Right column = published data (whole brain)
 # Rows are matched by plot type so the two can be read one against the other.
 #
 # Secrets (set in Connect Cloud, never committed):
@@ -25,9 +25,8 @@ library(httr)
 
 data_repo <- "Qbottle/data"
 
-# Shared label vocabulary. Both datasets are mapped onto these levels, and a
-# label means the same thing in both panels. Colours are shared so a colour
-# means one cell type across the whole page.
+# Shared label vocabulary. Both datasets are mapped onto these levels, so a
+# label and a colour mean the same cell type across the whole page.
 panel_levels <- c("aSMC", "C_PC", "Ts_PC", "vSMC")
 panel_cols   <- c(aSMC  = "firebrick",
                   C_PC  = "darkorange2",
@@ -39,28 +38,39 @@ panel_cols   <- c(aSMC  = "firebrick",
 shared_label_map <- c(aSMC = "aSMC", aaSMC = "aSMC",
                       C_PC = "C_PC", Ts_PC = "Ts_PC", vSMC = "vSMC")
 
+# Column tints. Cool blue-grey on the left echoes the vSMC steelblue; warm sand
+# on the right echoes the goldenrod/orange end. Both are desaturated enough that
+# plot ink stays dominant. Change these four pairs to restyle the whole page.
+tint <- list(
+  left  = list(bg = "#eef2f7", edge = "#b9cbdf", head = "#dae5f1"),
+  right = list(bg = "#faf5ec", edge = "#dfcdaf", head = "#f2e7d3")
+)
+
 # ── Left panel: our data ──
 cfg_left <- list(
   key        = "left",
   name       = "Our data",
-  subtitle   = "Mouse mural cells",
+  tissue     = "Hippocampus",
+  note       = NULL,          # small text beside the name; NULL to omit
+  platform   = NULL,          # EDIT: e.g. "10x, 3' UMI" — NULL to omit
   file       = "data/mural_obj_app.rds",
   source_col = "mural_final",
   label_map  = shared_label_map
 )
 
 # ── Right panel: published data ──
-# EDIT: replace the citation with the paper and accession you are citing.
 cfg_right <- list(
   key        = "right",
   name       = "Published (Betsholtz)",
-  subtitle   = "Mouse brain vasculature, plate-based | 1,375 cells | re-annotated",
+  tissue     = "Whole brain",
+  note       = "re-annotated by Gyu",
+  platform   = "Plate-based, full-length reads",
   file       = "data/Betsholtz_mural_app.rds",
   source_col = "mural_final",
   label_map  = shared_label_map
 )
 
-max_genes <- 8L   # lower than the single-panel version: 8 genes x 2 panels
+max_genes <- 8L   # 8 genes x 2 panels
 
 # Facet columns, tuned for half-width columns rather than full width
 ncol_bar     <- 3L
@@ -114,7 +124,17 @@ fetch_from_repo <- function(repo_path, dest) {
   invisible(dest)
 }
 
-# Turns a config entry into everything the plot builders need.
+# Plot backgrounds must be see-through for the column tint to read as one band
+theme_clear <- theme(
+  plot.background       = element_rect(fill = "transparent", colour = NA),
+  panel.background      = element_rect(fill = "transparent", colour = NA),
+  legend.background     = element_rect(fill = "transparent", colour = NA),
+  legend.box.background = element_rect(fill = "transparent", colour = NA),
+  legend.key            = element_rect(fill = "transparent", colour = NA),
+  strip.background      = element_rect(fill = "transparent", colour = NA)
+)
+
+# Turns a config entry into everything the plot builders and UI need.
 load_dataset <- function(cfg) {
   message("Loading ", cfg$name, " ...")
   dest <- file.path(tempdir(), paste0(cfg$key, ".rds"))
@@ -124,7 +144,7 @@ load_dataset <- function(cfg) {
 
   DefaultAssay(obj) <- "RNA"
   if (!"umap" %in% Reductions(obj)) {
-    stop(cfg$name, ": no 'umap' reduction. Add one in prep_published.R.")
+    stop(cfg$name, ": no 'umap' reduction. Add one in prepare_objects.R.")
   }
   if (!cfg$source_col %in% colnames(obj@meta.data)) {
     stop(cfg$name, ": metadata column '", cfg$source_col, "' not found. Found: ",
@@ -132,7 +152,7 @@ load_dataset <- function(cfg) {
   }
 
   # Map source labels onto the shared vocabulary, drop anything unmapped
-  mapped <- unname(cfg$label_map[as.character(obj@meta.data[[cfg$source_col]])])
+  mapped   <- unname(cfg$label_map[as.character(obj@meta.data[[cfg$source_col]])])
   unmapped <- setdiff(as.character(obj@meta.data[[cfg$source_col]]), names(cfg$label_map))
   if (length(unmapped)) {
     message(cfg$name, ": dropping unmapped labels: ", paste(unmapped, collapse = ", "))
@@ -153,24 +173,32 @@ load_dataset <- function(cfg) {
   # genes that are genuinely absent.
   expressed <- genes[Matrix::rowSums(LayerData(obj, assay = "RNA", layer = "data")) > 0]
 
+  # Counts per cell type, over the full shared vocabulary so the left and right
+  # tables always have the same number of rows and the columns stay aligned.
+  counts <- table(factor(as.character(obj$panel_class), levels = panel_levels))
+
   ref_plot <- DimPlot(obj, group.by = "panel_class", reduction = "umap",
                       label = TRUE, repel = TRUE, label.size = 4, pt.size = 0.5,
                       cols = panel_cols[present]) +
-    labs(title = cfg$name, subtitle = cfg$subtitle) +
+    labs(title = cfg$name, subtitle = cfg$tissue) +
     theme(plot.title    = element_text(face = "bold", size = 12),
-          plot.subtitle = element_text(size = 9, color = "grey30"))
+          plot.subtitle = element_text(size = 10, color = "grey30")) +
+    theme_clear
 
   list(
-    key      = cfg$key,
-    name     = cfg$name,
-    subtitle = cfg$subtitle,
-    obj      = obj,
-    present  = present,
-    genes    = genes,
-    lookup   = lookup,
+    key       = cfg$key,
+    name      = cfg$name,
+    tissue    = cfg$tissue,
+    note      = cfg$note,
+    platform  = cfg$platform,
+    obj       = obj,
+    present   = present,
+    genes     = genes,
+    lookup    = lookup,
     expressed = expressed,
-    n_cells  = ncol(obj),
-    ref_plot = ref_plot
+    counts    = counts,
+    n_cells   = ncol(obj),
+    ref_plot  = ref_plot
   )
 }
 
@@ -183,8 +211,8 @@ message("Loaded both datasets. Total in-memory size: ",
 # Gene resolution
 # ══════════════════════════════════════════════════════════════════════════════
 
-# One query symbol can resolve to a different rowname in each dataset, and may
-# be absent from one of them. Resolve per dataset and report per dataset.
+# One query symbol can be absent from one dataset, so resolve and report per
+# dataset rather than assuming a shared gene space.
 resolve_genes <- function(txt) {
   if (is.null(txt)) txt <- ""
   raw <- trimws(unlist(strsplit(txt, "[,;[:space:]]+")))
@@ -200,13 +228,13 @@ resolve_genes <- function(txt) {
     hit   <- d$lookup[toupper(queries)]
     found <- unname(hit[!is.na(hit)])
     list(found      = found,
-         missing    = queries[is.na(hit)],                    # not in this dataset
-         undetected = setdiff(found, d$expressed))            # present but all-zero
+         missing    = queries[is.na(hit)],           # not in this dataset
+         undetected = setdiff(found, d$expressed))   # present but all-zero
   })
 
   list(
     queries     = queries,
-    unknown     = raw[!in_any],                        # in neither dataset
+    unknown     = raw[!in_any],
     dropped     = max(0L, sum(in_any) - max_genes),
     per_dataset = per_dataset,
     # Row heights come from the larger side so the two columns stay aligned
@@ -248,7 +276,8 @@ make_bar <- function(ds, genes) {
     theme(plot.title  = element_text(face = "bold", size = 12),
           strip.text  = element_text(face = "bold.italic"),
           legend.position = "none",
-          axis.text.x = element_text(angle = 30, hjust = 1))
+          axis.text.x = element_text(angle = 30, hjust = 1)) +
+    theme_clear
 }
 
 make_violin <- function(ds, genes) {
@@ -257,7 +286,8 @@ make_violin <- function(ds, genes) {
           ncol = min(ncol_violin, length(genes))) &
     theme(plot.title   = element_text(size = 11, face = "bold.italic"),
           axis.title.x = element_blank(),
-          axis.text.x  = element_text(angle = 30, hjust = 1))
+          axis.text.x  = element_text(angle = 30, hjust = 1)) &
+    theme_clear
 }
 
 make_feature <- function(ds, genes) {
@@ -266,29 +296,131 @@ make_feature <- function(ds, genes) {
               ncol = min(ncol_feature, length(genes))) &
     theme(plot.title = element_text(size = 11, face = "bold.italic"),
           axis.title = element_blank(), axis.text = element_blank(),
-          axis.ticks = element_blank())
+          axis.ticks = element_blank()) &
+    theme_clear
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
-# UI
+# UI pieces
 # ══════════════════════════════════════════════════════════════════════════════
 
-# One row of the comparison: a heading, an optional note, then left | right
-compare_row <- function(heading, note, output_prefix, ref_height = NULL) {
-  panel <- function(side) {
-    id <- paste0(output_prefix, "_", side)
-    if (is.null(ref_height)) plotOutput(id) else plotOutput(id, height = ref_height)
-  }
-  tagList(
-    h4(heading),
-    if (!is.null(note)) tags$small(style = "color:#666;", note),
-    fluidRow(
-      column(6, panel("left")),
-      column(6, panel("right"))
-    ),
-    tags$hr()
+# Cell counts per type, rendered beside the UMAP that shows the distribution.
+# Static, so it is built once and embedded directly rather than via an output.
+count_table <- function(ds) {
+  n     <- as.integer(ds$counts)
+  names(n) <- names(ds$counts)
+  total <- sum(n)
+
+  body <- lapply(panel_levels, function(k) {
+    tags$tr(
+      tags$td(
+        style = "padding:2px 8px 2px 0;",
+        tags$span(style = sprintf(
+          "display:inline-block; width:9px; height:9px; border-radius:2px;
+           background:%s; margin-right:6px;", panel_cols[[k]])),
+        k
+      ),
+      tags$td(style = "padding:2px 10px; text-align:right; font-variant-numeric:tabular-nums;",
+              format(n[[k]], big.mark = ",")),
+      tags$td(style = "padding:2px 0; text-align:right; color:#777;
+                       font-variant-numeric:tabular-nums;",
+              if (total > 0) sprintf("%.1f%%", 100 * n[[k]] / total) else "—")
+    )
+  })
+
+  tags$table(
+    style = "font-size:12px; margin:6px auto 2px auto; border-collapse:collapse;",
+    tags$thead(tags$tr(
+      tags$th(style = "text-align:left; padding-bottom:3px; border-bottom:1px solid #ccc;",
+              "Cell type"),
+      tags$th(style = "text-align:right; padding:0 10px 3px 10px; border-bottom:1px solid #ccc;",
+              "Cells"),
+      tags$th(style = "text-align:right; padding-bottom:3px; border-bottom:1px solid #ccc;",
+              "%")
+    )),
+    tags$tbody(
+      body,
+      tags$tr(
+        tags$td(style = "padding-top:4px; border-top:1px solid #ccc; font-weight:600;",
+                "Total"),
+        tags$td(style = "padding:4px 10px 0 10px; text-align:right; font-weight:600;
+                         border-top:1px solid #ccc; font-variant-numeric:tabular-nums;",
+                format(total, big.mark = ",")),
+        tags$td(style = "border-top:1px solid #ccc;")
+      )
+    )
   )
 }
+
+# One comparison row: a full-width heading strip, then the two tinted columns.
+# `extra` is a named list of additional content to place under each plot.
+compare_row <- function(heading, note, output_prefix, ref_height = NULL, extra = NULL) {
+  side_col <- function(side) {
+    id <- paste0(output_prefix, "_", side)
+    column(
+      6,
+      div(
+        class = paste0("cmp-band cmp-", side),
+        if (is.null(ref_height)) plotOutput(id) else plotOutput(id, height = ref_height),
+        if (!is.null(extra[[side]])) extra[[side]]
+      )
+    )
+  }
+  tagList(
+    div(class = "cmp-head",
+        span(class = "cmp-head-title", heading),
+        if (!is.null(note)) span(class = "cmp-head-note", note)),
+    fluidRow(side_col("left"), side_col("right"))
+  )
+}
+
+# Column header: name, small provenance note beside it, tissue underneath
+column_header <- function(ds, side) {
+  div(
+    class = paste0("cmp-colhead cmp-colhead-", side),
+    div(
+      span(class = "cmp-colhead-name", ds$name),
+      if (!is.null(ds$note)) span(class = "cmp-colhead-note", ds$note)
+    ),
+    div(class = "cmp-colhead-tissue", ds$tissue)
+  )
+}
+
+app_css <- sprintf("
+  .cmp-head {
+    background:#eceef1; border-radius:3px;
+    padding:5px 10px; margin:0 15px;
+  }
+  .cmp-head-title { font-weight:600; font-size:14px; }
+  .cmp-head-note  { color:#666; font-size:11.5px; margin-left:10px; }
+
+  /* Consecutive bands touch, so each column reads as one continuous strip */
+  .cmp-band { padding:10px 12px 12px 12px; }
+  .cmp-left  { background:%s; border-left:3px solid %s; }
+  .cmp-right { background:%s; border-left:3px solid %s; }
+
+  .cmp-colhead { text-align:center; padding:6px 4px; border-radius:3px 3px 0 0; }
+  .cmp-colhead-left  { background:%s; border-bottom:2px solid %s; }
+  .cmp-colhead-right { background:%s; border-bottom:2px solid %s; }
+  .cmp-colhead-name   { font-weight:700; font-size:15px; }
+  .cmp-colhead-note   { font-size:11.5px; color:#5c5c5c; font-style:italic;
+                        margin-left:8px; }
+  .cmp-colhead-tissue { font-size:12px; color:#4a4a4a; margin-top:1px; }
+
+  .cmp-legend-swatch {
+    display:inline-block; width:10px; height:10px; border-radius:2px;
+    margin-right:6px; vertical-align:middle;
+  }
+  .cmp-notebox {
+    background:#f1f3f5; border-left:3px solid #8a94a6;
+    padding:8px 12px; margin:0 15px 12px 15px; font-size:13px;
+  }
+",
+  tint$left$bg,   tint$left$edge,
+  tint$right$bg,  tint$right$edge,
+  tint$left$head, tint$left$edge,
+  tint$right$head, tint$right$edge
+)
 
 main_ui <- function() {
   tagList(
@@ -303,49 +435,47 @@ main_ui <- function() {
         tags$hr(),
         uiOutput("status"),
         tags$hr(),
-        tags$small(
-          tags$b(datasets$left$name), tags$br(),
-          sprintf("%s | %s cells | %s genes", datasets$left$subtitle,
-                  format(datasets$left$n_cells, big.mark = ","),
-                  format(length(datasets$left$genes), big.mark = ",")),
-          tags$br(), tags$br(),
-          tags$b(datasets$right$name), tags$br(),
-          sprintf("%s | %s cells | %s genes", datasets$right$subtitle,
-                  format(datasets$right$n_cells, big.mark = ","),
-                  format(length(datasets$right$genes), big.mark = ",")),
-          tags$br(), tags$br(),
-          sprintf("Up to %d genes plotted at a time.", max_genes)
-        )
+        lapply(c("left", "right"), function(side) {
+          ds <- datasets[[side]]
+          div(
+            style = sprintf("background:%s; border-left:3px solid %s;
+                             padding:6px 8px; margin-bottom:8px; font-size:12px;",
+                            tint[[side]]$bg, tint[[side]]$edge),
+            tags$b(ds$name),
+            if (!is.null(ds$note)) tags$span(style = "font-style:italic; color:#5c5c5c;",
+                                             paste0(" ", ds$note)),
+            tags$br(),
+            ds$tissue,
+            if (!is.null(ds$platform)) tagList(tags$br(), ds$platform),
+            tags$br(),
+            sprintf("%s genes measured", format(length(ds$genes), big.mark = ","))
+          )
+        }),
+        tags$small(style = "color:#777;",
+                   sprintf("Up to %d genes plotted at a time.", max_genes))
       ),
       mainPanel(
         width = 9,
 
-        # Column headers, so the reader knows which side is which before scrolling
         fluidRow(
-          column(6, div(style = "text-align:center; font-weight:600; padding:4px;
-                                 background:#f5f5f5; border-radius:4px;",
-                        datasets$left$name)),
-          column(6, div(style = "text-align:center; font-weight:600; padding:4px;
-                                 background:#f5f5f5; border-radius:4px;",
-                        datasets$right$name))
+          column(6, column_header(datasets$left,  "left")),
+          column(6, column_header(datasets$right, "right"))
         ),
-        tags$br(),
 
-        div(style = "background:#fff8e1; border-left:3px solid #d4a017;
-                     padding:8px 12px; margin-bottom:14px; font-size:13px;",
+        div(class = "cmp-notebox",
             tags$b("Reading these panels."), tags$br(),
-            "The two datasets were generated on different platforms and were ",
-            "normalised independently. Compare the ", tags$i("pattern across cell types"),
+            "The two datasets come from different tissue (hippocampus versus whole ",
+            "brain), were generated on different platforms, and were normalised ",
+            "independently. Compare the ", tags$i("pattern across cell types"),
             " within each panel. Do not compare bar heights or colour intensities ",
             "between the left and right panels: a difference there can reflect ",
-            "library preparation and sequencing depth rather than biology."
+            "dissection, library preparation or sequencing depth rather than biology."
         ),
 
         compare_row(
           "Bar graph — subtypes (PC split: C_PC / Ts_PC)",
-          paste("All samples pooled | aSMC = aSMC + aaSMC |",
-                "y-axes independent | error bars are SEM, so their width tracks",
-                "the number of cells in each group as much as the spread."),
+          paste("All samples pooled | aSMC = aSMC + aaSMC | y-axes independent |",
+                "error bars are SEM, so their width tracks group size as much as spread."),
           "bar"
         ),
         compare_row(
@@ -354,9 +484,12 @@ main_ui <- function() {
           "violin"
         ),
         compare_row(
-          "Reference UMAP",
+          "Reference UMAP and cell-type composition",
           "Embeddings are computed independently, so position is not comparable between panels.",
-          "ref", ref_height = "420px"
+          "ref",
+          ref_height = "420px",
+          extra = list(left  = count_table(datasets$left),
+                       right = count_table(datasets$right))
         ),
         compare_row(
           "Feature plot (UMAP)",
@@ -379,15 +512,18 @@ login_ui <- function(msg = NULL) {
 }
 
 ui <- fluidPage(
-  # Enter submits the login form. Lives at the top level so it survives the
-  # login -> app swap; the guard means it does nothing once #login is gone.
-  tags$head(tags$script(HTML(
-    "document.addEventListener('keydown', function(e) {
-       if (e.key !== 'Enter') return;
-       var btn = document.getElementById('login');
-       if (btn) { e.preventDefault(); btn.click(); }
-     });"
-  ))),
+  tags$head(
+    tags$style(HTML(app_css)),
+    # Enter submits the login form. Lives at the top level so it survives the
+    # login -> app swap; the guard means it does nothing once #login is gone.
+    tags$script(HTML(
+      "document.addEventListener('keydown', function(e) {
+         if (e.key !== 'Enter') return;
+         var btn = document.getElementById('login');
+         if (btn) { e.preventDefault(); btn.click(); }
+       });"
+    ))
+  ),
   uiOutput("page")
 )
 
@@ -396,34 +532,35 @@ ui <- fluidPage(
 # ══════════════════════════════════════════════════════════════════════════════
 
 # Wires up the four outputs for one dataset. Called once per side, so the plot
-# code exists in exactly one place.
+# code exists in exactly one place. bg = "transparent" lets the column tint show
+# through instead of a white rectangle.
 register_panel <- function(output, ds, genes_r, authed) {
-  side <- ds$key
-  found <- function() genes_r()$per_dataset[[side]]$found
+  side   <- ds$key
+  found  <- function() genes_r()$per_dataset[[side]]$found
   n_rows <- function() genes_r()$n_rows_for   # shared, so rows stay aligned
 
   output[[paste0("ref_", side)]] <- renderPlot({
     req(authed())
     ds$ref_plot
-  })
+  }, bg = "transparent")
 
   output[[paste0("bar_", side)]] <- renderPlot({
     req(authed())
     g <- found(); req(length(g) > 0)
     make_bar(ds, g)
-  }, height = function() grid_height(n_rows(), ncol_bar, 240))
+  }, height = function() grid_height(n_rows(), ncol_bar, 240), bg = "transparent")
 
   output[[paste0("violin_", side)]] <- renderPlot({
     req(authed())
     g <- found(); req(length(g) > 0)
     make_violin(ds, g)
-  }, height = function() grid_height(n_rows(), ncol_violin, 260))
+  }, height = function() grid_height(n_rows(), ncol_violin, 260), bg = "transparent")
 
   output[[paste0("feature_", side)]] <- renderPlot({
     req(authed())
     g <- found(); req(length(g) > 0)
     make_feature(ds, g)
-  }, height = function() grid_height(n_rows(), ncol_feature, 280))
+  }, height = function() grid_height(n_rows(), ncol_feature, 280), bg = "transparent")
 }
 
 server <- function(input, output, session) {
