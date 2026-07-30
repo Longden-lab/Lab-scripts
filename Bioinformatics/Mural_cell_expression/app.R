@@ -33,6 +33,13 @@ panel_cols   <- c(aSMC  = "firebrick",
                   Ts_PC = "goldenrod3",
                   vSMC  = "steelblue")
 
+# ggplot accepts R colour names; CSS does not. "darkorange2" and "goldenrod3"
+# are R-only, so HTML swatches using them render blank. Convert once here and
+# use the hex form for every HTML element.
+panel_cols_hex <- apply(grDevices::col2rgb(panel_cols), 2,
+                        function(x) sprintf("#%02X%02X%02X", x[1], x[2], x[3]))
+names(panel_cols_hex) <- names(panel_cols)
+
 # Both objects carry `mural_final` with the same five levels, so a single
 # shared map serves both and the two configs differ only in provenance.
 shared_label_map <- c(aSMC = "aSMC", aaSMC = "aSMC",
@@ -177,12 +184,15 @@ load_dataset <- function(cfg) {
   # tables always have the same number of rows and the columns stay aligned.
   counts <- table(factor(as.character(obj$panel_class), levels = panel_levels))
 
+  # No on-plot labels and no legend: the count table sits where the legend was
+  # and doubles as the colour key.
   ref_plot <- DimPlot(obj, group.by = "panel_class", reduction = "umap",
-                      label = TRUE, repel = TRUE, label.size = 4, pt.size = 0.5,
+                      label = FALSE, pt.size = 0.5,
                       cols = panel_cols[present]) +
     labs(title = cfg$name, subtitle = cfg$tissue) +
-    theme(plot.title    = element_text(face = "bold", size = 12),
-          plot.subtitle = element_text(size = 10, color = "grey30")) +
+    theme(plot.title      = element_text(face = "bold", size = 12),
+          plot.subtitle   = element_text(size = 10, color = "grey30"),
+          legend.position = "none") +
     theme_clear
 
   list(
@@ -314,13 +324,14 @@ count_table <- function(ds) {
   body <- lapply(panel_levels, function(k) {
     tags$tr(
       tags$td(
-        style = "padding:2px 8px 2px 0;",
+        style = "padding:2px 6px 2px 0;",
         tags$span(style = sprintf(
           "display:inline-block; width:9px; height:9px; border-radius:2px;
-           background:%s; margin-right:6px;", panel_cols[[k]])),
+           background:%s; margin-right:5px;", panel_cols_hex[[k]])),
         k
       ),
-      tags$td(style = "padding:2px 10px; text-align:right; font-variant-numeric:tabular-nums;",
+      tags$td(style = "padding:2px 7px; text-align:right;
+                       font-variant-numeric:tabular-nums;",
               format(n[[k]], big.mark = ",")),
       tags$td(style = "padding:2px 0; text-align:right; color:#777;
                        font-variant-numeric:tabular-nums;",
@@ -329,11 +340,13 @@ count_table <- function(ds) {
   })
 
   tags$table(
-    style = "font-size:12px; margin:6px auto 2px auto; border-collapse:collapse;",
+    style = "font-size:11.5px; margin:0 auto; border-collapse:collapse;
+             white-space:nowrap;",
     tags$thead(tags$tr(
       tags$th(style = "text-align:left; padding-bottom:3px; border-bottom:1px solid #ccc;",
               "Cell type"),
-      tags$th(style = "text-align:right; padding:0 10px 3px 10px; border-bottom:1px solid #ccc;",
+      tags$th(style = "text-align:right; padding:0 7px 3px 7px;
+                       border-bottom:1px solid #ccc;",
               "Cells"),
       tags$th(style = "text-align:right; padding-bottom:3px; border-bottom:1px solid #ccc;",
               "%")
@@ -343,7 +356,7 @@ count_table <- function(ds) {
       tags$tr(
         tags$td(style = "padding-top:4px; border-top:1px solid #ccc; font-weight:600;",
                 "Total"),
-        tags$td(style = "padding:4px 10px 0 10px; text-align:right; font-weight:600;
+        tags$td(style = "padding:4px 7px 0 7px; text-align:right; font-weight:600;
                          border-top:1px solid #ccc; font-variant-numeric:tabular-nums;",
                 format(total, big.mark = ",")),
         tags$td(style = "border-top:1px solid #ccc;")
@@ -354,17 +367,35 @@ count_table <- function(ds) {
 
 # One comparison row: a full-width heading strip, then the two tinted columns.
 # `extra` is a named list of additional content to place under each plot.
-compare_row <- function(heading, note, output_prefix, ref_height = NULL, extra = NULL) {
+compare_row <- function(heading, note, output_prefix, ref_height = NULL,
+                        extra = NULL, extra_at = c("below", "right")) {
+  extra_at <- match.arg(extra_at)
+
   side_col <- function(side) {
     id <- paste0(output_prefix, "_", side)
-    column(
-      6,
-      div(
-        class = paste0("cmp-band cmp-", side),
-        if (is.null(ref_height)) plotOutput(id) else plotOutput(id, height = ref_height),
-        if (!is.null(extra[[side]])) extra[[side]]
+
+    # height="auto" matters: the default plotOutput container is 400px, and any
+    # renderPlot image taller than that overflows the tinted band.
+    plt <- if (is.null(ref_height)) {
+      plotOutput(id, height = "auto")
+    } else {
+      plotOutput(id, height = ref_height)
+    }
+
+    inner <- if (!is.null(extra[[side]]) && extra_at == "right") {
+      fluidRow(
+        column(7, plt),
+        column(5, div(
+          style = sprintf("display:flex; align-items:center; justify-content:center;
+                           height:%s;", if (is.null(ref_height)) "auto" else ref_height),
+          extra[[side]]
+        ))
       )
-    )
+    } else {
+      tagList(plt, if (!is.null(extra[[side]])) extra[[side]])
+    }
+
+    column(6, div(class = paste0("cmp-band cmp-", side), inner))
   }
   tagList(
     div(class = "cmp-head",
@@ -388,11 +419,12 @@ column_header <- function(ds, side) {
 
 app_css <- sprintf("
   .cmp-head {
-    background:#eceef1; border-radius:3px;
-    padding:5px 10px; margin:0 15px;
+    background:#3f4756; border-radius:3px 3px 0 0;
+    padding:7px 12px; margin:14px 15px 0 15px;
   }
-  .cmp-head-title { font-weight:600; font-size:14px; }
-  .cmp-head-note  { color:#666; font-size:11.5px; margin-left:10px; }
+  .cmp-head-title { font-weight:600; font-size:15px; color:#ffffff;
+                    letter-spacing:0.2px; }
+  .cmp-head-note  { color:#c3cad6; font-size:12px; margin-left:10px; }
 
   /* Consecutive bands touch, so each column reads as one continuous strip */
   .cmp-band { padding:10px 12px 12px 12px; }
@@ -489,7 +521,8 @@ main_ui <- function() {
           "ref",
           ref_height = "420px",
           extra = list(left  = count_table(datasets$left),
-                       right = count_table(datasets$right))
+                       right = count_table(datasets$right)),
+          extra_at = "right"
         ),
         compare_row(
           "Feature plot (UMAP)",
