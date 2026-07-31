@@ -61,7 +61,7 @@ tint <- list(
 # in manifest.json, or the deployed app shows a broken-image icon.
 sidebar_image     <- "mural_mouse.jpg"
 sidebar_image_alt <- "Riding a mural cell"
-sidebar_image_cap <- "Mouse mural cells, artist's impression"
+sidebar_image_cap <- "Mouse under control"
 
 # ── Left panel: our data ──
 cfg_left <- list(
