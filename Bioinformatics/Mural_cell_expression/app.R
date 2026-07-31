@@ -10,6 +10,9 @@
 #
 # Neither .rds is part of the deployed bundle. Both are pulled from the private
 # repo at startup into tempdir(), read into memory, then deleted from disk.
+#
+# Static assets live in www/ next to this file and are served at the web root,
+# so www/mural_mouse.jpg is referenced as src = "mural_mouse.jpg".
 
 library(shiny)
 library(Seurat)
@@ -40,8 +43,9 @@ panel_cols_hex <- apply(grDevices::col2rgb(panel_cols), 2,
                         function(x) sprintf("#%02X%02X%02X", x[1], x[2], x[3]))
 names(panel_cols_hex) <- names(panel_cols)
 
-# Both objects carry `mural_final` with the same five levels, so a single
-# shared map serves both and the two configs differ only in provenance.
+# Both objects carry `mural_final`, and the five source labels below collapse
+# onto the four shared levels, so a single map serves both and the two configs
+# differ only in provenance.
 shared_label_map <- c(aSMC = "aSMC", aaSMC = "aSMC",
                       C_PC = "C_PC", Ts_PC = "Ts_PC", vSMC = "vSMC")
 
@@ -52,6 +56,12 @@ tint <- list(
   left  = list(bg = "#eef2f7", edge = "#b9cbdf", head = "#dae5f1"),
   right = list(bg = "#faf5ec", edge = "#dfcdaf", head = "#f2e7d3")
 )
+
+# Sidebar image. Set to NULL to drop it. The file must sit in www/ and be listed
+# in manifest.json, or the deployed app shows a broken-image icon.
+sidebar_image     <- "mural_mouse.jpg"
+sidebar_image_alt <- "Riding a mural cell"
+sidebar_image_cap <- "Mouse mural cells, artist's impression"
 
 # ── Left panel: our data ──
 cfg_left <- list(
@@ -447,6 +457,16 @@ app_css <- sprintf("
     background:#f1f3f5; border-left:3px solid #8a94a6;
     padding:8px 12px; margin:0 15px 12px 15px; font-size:13px;
   }
+
+  /* Sidebar photo. width:100%% keeps it inside the sidebar at any window size */
+  .cmp-sidebar-img {
+    width:100%%; height:auto; display:block; border-radius:3px;
+    border:1px solid #d8dde3;
+  }
+  .cmp-sidebar-cap {
+    font-size:11px; color:#777; text-align:center; margin-top:4px;
+    line-height:1.3;
+  }
 ",
   tint$left$bg,   tint$left$edge,
   tint$right$bg,  tint$right$edge,
@@ -484,7 +504,17 @@ main_ui <- function() {
           )
         }),
         tags$small(style = "color:#777;",
-                   sprintf("Up to %d genes plotted at a time.", max_genes))
+                   sprintf("Up to %d genes plotted at a time.", max_genes)),
+
+        # Sidebar photo, last so it never pushes the gene box or the status
+        # messages below the fold.
+        if (!is.null(sidebar_image)) tagList(
+          tags$hr(),
+          tags$img(src = sidebar_image, class = "cmp-sidebar-img",
+                   alt = sidebar_image_alt),
+          if (!is.null(sidebar_image_cap))
+            div(class = "cmp-sidebar-cap", sidebar_image_cap)
+        )
       ),
       mainPanel(
         width = 9,
