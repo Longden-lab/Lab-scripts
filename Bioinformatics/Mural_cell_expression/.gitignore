@@ -1,0 +1,6 @@
+*.rds
+.Renviron
+.Rhistory
+.RData
+.Rproj.user/
+omnipathr-log/
