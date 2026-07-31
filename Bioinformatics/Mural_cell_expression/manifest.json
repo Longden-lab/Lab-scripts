@@ -4062,7 +4062,10 @@
   },
   "files": {
     "app.R": {
-      "checksum": "09e724f933fe6cdd90de6ecde3df2d77"
+      "checksum": "495db8a41ec737d68f50e52013f9b366"
+    },
+    "www/mural_mouse.jpg": {
+      "checksum": "9a62aaddb4d98179f80dfa233d878e83"
     }
   },
   "users": null
