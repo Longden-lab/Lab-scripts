@@ -461,8 +461,8 @@ main_ui <- function() {
       sidebarPanel(
         width = 3,
         textAreaInput("genes", "Gene(s) — comma or space separated",
-                      value = "Kcnj8, Adra1a, Ednra", rows = 3,
-                      placeholder = "e.g. Kcnj8, Adra1a, Ednra"),
+                      value = "Kcnj8, Atp13a5, Col3a1", rows = 3,
+                      placeholder = "e.g. Kcnj8, Atp13a5, Col3a1"),
         actionButton("go", "Plot", class = "btn-primary"),
         tags$hr(),
         uiOutput("status"),
